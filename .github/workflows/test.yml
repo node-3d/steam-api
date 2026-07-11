@@ -1,0 +1,38 @@
+name: Test
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Fetch Repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.13.0
+
+      - name: Install Modules
+        run: npm install --ignore-scripts
+
+      - name: Build TypeScript
+        run: npm run build:ci
+
+      - name: Run Unit Tests
+        run: npm run test:ci

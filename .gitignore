@@ -82,6 +82,12 @@ out
 .nuxt
 dist
 .output
+.rslib/
+.sdk/
+bin-*/
+src/build/
+src/node_modules/
+*.tgz
 
 # Gatsby files
 .cache/
