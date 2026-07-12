@@ -6,6 +6,7 @@ test(
 	{ skip: true },
 	async () => {
 		const steamApi = await import('./index.ts');
-		assert.equal(typeof steamApi.initEx, 'function');
+		assert.equal(typeof steamApi.steam.initEx, 'function');
+		assert.equal(typeof steamApi.user.cancelAuthTicket, 'function');
 	},
 );

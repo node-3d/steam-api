@@ -58,19 +58,28 @@ export type TSteamCallbackEvent =
 			maxProgress: 0;
 	  }>;
 
-type TNativeFunctions = Readonly<{
+export type TSteamNamespace = Readonly<{
 	restartAppIfNecessary: (appId: number) => boolean;
 	initEx: () => TSteamInitResult;
 	shutdown: () => void;
 	isSteamRunning: () => boolean;
 	runCallbacks: () => void;
 	releaseCurrentThreadMemory: () => void;
+}>;
+
+export type TSteamCallbacksNamespace = Readonly<{
 	pollCallbacks: () => TSteamCallbackEvent[];
+}>;
+
+export type TSteamUserNamespace = Readonly<{
 	getHSteamUser: () => number;
 	isLoggedOn: () => boolean;
 	getSteamId: () => TSteamId;
 	getAuthSessionTicket: () => TSteamAuthSessionTicket;
 	cancelAuthTicket: (handle: number) => void;
+}>;
+
+export type TSteamUtilsNamespace = Readonly<{
 	getAppId: () => number;
 	getConnectedUniverse: () => number;
 	getIpCountry: () => string;
@@ -78,6 +87,9 @@ type TNativeFunctions = Readonly<{
 	getSteamUiLanguage: () => string;
 	isOverlayEnabled: () => boolean;
 	isSteamInBigPictureMode: () => boolean;
+}>;
+
+export type TSteamAppsNamespace = Readonly<{
 	isSubscribed: () => boolean;
 	isSubscribedApp: (appId: number) => boolean;
 	isDlcInstalled: (appId: number) => boolean;
@@ -87,6 +99,9 @@ type TNativeFunctions = Readonly<{
 	getDlcCount: () => number;
 	getDlcDataByIndex: (index: number) => TSteamDlcData | null;
 	getAppInstallDir: (appId: number) => string | null;
+}>;
+
+export type TSteamUserStatsNamespace = Readonly<{
 	getStatInt: (name: string) => number | null;
 	getStatFloat: (name: string) => number | null;
 	setStatInt: (name: string, value: number) => boolean;
@@ -115,7 +130,16 @@ type TNativeConstantName =
 	| 'k_EUniverseInternal'
 	| 'k_EUniverseDev';
 
-export type TNative = TNativeFunctions & Readonly<Record<TNativeConstantName, number>>;
+type TNativeNamespaces = Readonly<{
+	steam: TSteamNamespace;
+	callbacks: TSteamCallbacksNamespace;
+	user: TSteamUserNamespace;
+	utils: TSteamUtilsNamespace;
+	apps: TSteamAppsNamespace;
+	userStats: TSteamUserStatsNamespace;
+}>;
+
+export type TNative = TNativeNamespaces & Readonly<Record<TNativeConstantName, number>>;
 
 const loadAddon = createRequire(import.meta.url);
 

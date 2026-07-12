@@ -9,7 +9,13 @@
 			'target_name': 'steam-api',
 			'includes': ['common.gypi'],
 			'sources': [
+				'cpp/apps.cpp',
 				'cpp/bindings.cpp',
+				'cpp/callbacks.cpp',
+				'cpp/steam-api.cpp',
+				'cpp/user-stats.cpp',
+				'cpp/user.cpp',
+				'cpp/utils.cpp',
 			],
 			'include_dirs': [
 				'<!@(node -e "import(\'@node-3d/addon-tools\').then((m) => m.printInclude())")',

@@ -3,55 +3,26 @@ import { native } from './native.ts';
 export type {
 	TGameId,
 	TSteamAchievementUnlockTime,
+	TSteamAppsNamespace,
 	TSteamAuthSessionTicket,
+	TSteamCallbacksNamespace,
 	TSteamCallbackEvent,
 	TSteamDlcData,
 	TSteamId,
 	TSteamInitResult,
+	TSteamNamespace,
+	TSteamUserNamespace,
+	TSteamUserStatsNamespace,
+	TSteamUtilsNamespace,
 } from './native.ts';
 
 export const {
-	restartAppIfNecessary,
-	initEx,
-	shutdown,
-	isSteamRunning,
-	runCallbacks,
-	releaseCurrentThreadMemory,
-	pollCallbacks,
-	getHSteamUser,
-	isLoggedOn,
-	getSteamId,
-	getAuthSessionTicket,
-	cancelAuthTicket,
-	getAppId,
-	getConnectedUniverse,
-	getIpCountry,
-	getServerRealTime,
-	getSteamUiLanguage,
-	isOverlayEnabled,
-	isSteamInBigPictureMode,
-	isSubscribed,
-	isSubscribedApp,
-	isDlcInstalled,
-	isAppInstalled,
-	getCurrentGameLanguage,
-	getAvailableGameLanguages,
-	getDlcCount,
-	getDlcDataByIndex,
-	getAppInstallDir,
-	getStatInt,
-	getStatFloat,
-	setStatInt,
-	setStatFloat,
-	getAchievement,
-	setAchievement,
-	clearAchievement,
-	storeStats,
-	resetAllStats,
-	getNumAchievements,
-	getAchievementName,
-	getAchievementDisplayAttribute,
-	getAchievementAndUnlockTime,
+	steam,
+	callbacks,
+	user,
+	utils,
+	apps,
+	userStats,
 	k_ESteamAPIInitResult_OK,
 	k_ESteamAPIInitResult_FailedGeneric,
 	k_ESteamAPIInitResult_NoSteamClient,
@@ -66,14 +37,14 @@ export const {
 } = native;
 
 export const init = (): void => {
-	const result = initEx();
+	const result = steam.initEx();
 
 	if (!result.ok) {
 		throw new Error(`SteamAPI_InitEx failed with ${result.result}: ${result.errorMessage}`);
 	}
 };
 
-export const update = (): ReturnType<typeof pollCallbacks> => {
-	runCallbacks();
-	return pollCallbacks();
+export const update = (): ReturnType<typeof callbacks.pollCallbacks> => {
+	steam.runCallbacks();
+	return callbacks.pollCallbacks();
 };

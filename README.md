@@ -14,16 +14,16 @@ A consumer install doesn't need a compiler or a local Steamworks SDK copy.
 ## Example
 
 ```ts
-import { getAppId, getSteamId, initEx, isLoggedOn, update } from '@node-3d/steam-api';
+import { steam, update, user, utils } from '@node-3d/steam-api';
 
-const result = initEx();
+const result = steam.initEx();
 
 if (!result.ok) {
 	throw new Error(`Steamworks init failed: ${result.errorMessage}`);
 }
 
-console.log('app', getAppId());
-console.log('user', getSteamId(), isLoggedOn() ? 'logged on' : 'offline');
+console.log('app', utils.getAppId());
+console.log('user', user.getSteamId(), user.isLoggedOn() ? 'logged on' : 'offline');
 
 for (const event of update()) {
 	console.log(event);
@@ -35,46 +35,55 @@ for (const event of update()) {
 The initial binding covers lifecycle, callback pumping, basic app/user helpers,
 auth tickets, DLC metadata, and user stats/achievements.
 
-Core lifecycle:
+`steam`:
 
-- `restartAppIfNecessary(appId)`
-- `initEx()`
+- `steam.restartAppIfNecessary(appId)`
+- `steam.initEx()`
 - `init()`
-- `shutdown()`
-- `isSteamRunning()`
-- `runCallbacks()`
-- `pollCallbacks()`
+- `steam.shutdown()`
+- `steam.isSteamRunning()`
+- `steam.runCallbacks()`
 - `update()`
-- `releaseCurrentThreadMemory()`
+- `steam.releaseCurrentThreadMemory()`
 
-User/app/utils helpers:
+`callbacks`:
 
-- `getSteamId()`
-- `isLoggedOn()`
-- `getAuthSessionTicket()`
-- `cancelAuthTicket(handle)`
-- `getAppId()`
-- `getConnectedUniverse()`
-- `getIpCountry()`
-- `getServerRealTime()`
-- `getSteamUiLanguage()`
-- `isOverlayEnabled()`
-- `isSubscribed()`
-- `isDlcInstalled(appId)`
-- `getDlcDataByIndex(index)`
+- `callbacks.pollCallbacks()`
 
-Stats and achievements:
+`user`:
 
-- `getStatInt(name)`
-- `getStatFloat(name)`
-- `setStatInt(name, value)`
-- `setStatFloat(name, value)`
-- `getAchievement(name)`
-- `setAchievement(name)`
-- `clearAchievement(name)`
-- `storeStats()`
-- `resetAllStats(achievementsToo)`
-- `getAchievementAndUnlockTime(name)`
+- `user.getSteamId()`
+- `user.isLoggedOn()`
+- `user.getAuthSessionTicket()`
+- `user.cancelAuthTicket(handle)`
+
+`utils`:
+
+- `utils.getAppId()`
+- `utils.getConnectedUniverse()`
+- `utils.getIpCountry()`
+- `utils.getServerRealTime()`
+- `utils.getSteamUiLanguage()`
+- `utils.isOverlayEnabled()`
+
+`apps`:
+
+- `apps.isSubscribed()`
+- `apps.isDlcInstalled(appId)`
+- `apps.getDlcDataByIndex(index)`
+
+`userStats`:
+
+- `userStats.getStatInt(name)`
+- `userStats.getStatFloat(name)`
+- `userStats.setStatInt(name, value)`
+- `userStats.setStatFloat(name, value)`
+- `userStats.getAchievement(name)`
+- `userStats.setAchievement(name)`
+- `userStats.clearAchievement(name)`
+- `userStats.storeStats()`
+- `userStats.resetAllStats(achievementsToo)`
+- `userStats.getAchievementAndUnlockTime(name)`
 
 `update()` runs Steam callbacks and returns queued typed callback payloads such
 as `userStatsReceived`, `userStatsStored`, and `userAchievementStored`.

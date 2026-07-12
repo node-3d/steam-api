@@ -83,6 +83,7 @@ out
 dist
 .output
 .rslib/
+.clang-format
 .sdk/
 bin-*/
 src/build/

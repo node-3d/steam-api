@@ -1,13 +1,13 @@
-import { getAppId, getSteamId, initEx, isLoggedOn, update } from '@node-3d/steam-api';
+import { steam, update, user, utils } from '@node-3d/steam-api';
 
-const result = initEx();
+const result = steam.initEx();
 
 if (!result.ok) {
 	throw new Error(`Steamworks init failed: ${result.errorMessage}`);
 }
 
-console.log('app', getAppId());
-console.log('user', getSteamId(), isLoggedOn() ? 'logged on' : 'offline');
+console.log('app', utils.getAppId());
+console.log('user', user.getSteamId(), user.isLoggedOn() ? 'logged on' : 'offline');
 
 for (const event of update()) {
 	console.log(event);
