@@ -1,5 +1,11 @@
 # @node-3d/steam-api
 
+This is a part of [Node3D](https://github.com/node-3d) project.
+
+[![NPM](https://badge.fury.io/js/@node-3d%2Fsteam-api.svg)](https://badge.fury.io/js/@node-3d/steam-api)
+[![Lint](https://github.com/node-3d/steam-api/actions/workflows/lint.yml/badge.svg)](https://github.com/node-3d/steam-api/actions/workflows/lint.yml)
+[![Test](https://github.com/node-3d/steam-api/actions/workflows/test.yml/badge.svg)](https://github.com/node-3d/steam-api/actions/workflows/test.yml)
+
 [WIP] Steamworks API bindings for Node.js.
 
 ## Install
