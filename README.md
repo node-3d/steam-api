@@ -14,18 +14,7 @@ This is a part of [Node3D](https://github.com/node-3d) project.
 npm install @node-3d/steam-api
 ```
 
-## Binary Origin
 
-Release archives are built by this repository's public GitHub Actions workflows.
-
-Attestations: https://github.com/node-3d/steam-api/attestations
-
-To verify a downloaded archive:
-
-```bash
-gh release download <tag> -R node-3d/steam-api -p <platform>.gz
-gh attestation verify <platform>.gz -R node-3d/steam-api
-```
 
 Published packages include prebuilt native binaries.
 A consumer install doesn't need a compiler or a local Steamworks SDK copy.
@@ -116,3 +105,16 @@ Maintainers must provide the SDK separately under Valve's Steamworks
 terms when building native binaries.
 
 See [BUILD.md](BUILD.md) for local and CI build setup.
+
+## Binary Origin
+
+Release archives are built by this repository's public GitHub Actions workflows.
+
+Attestations: https://github.com/node-3d/steam-api/attestations
+
+To verify a downloaded archive:
+
+```bash
+gh release download <tag> -R node-3d/steam-api -p <platform>.gz
+gh attestation verify <platform>.gz -R node-3d/steam-api
+```
