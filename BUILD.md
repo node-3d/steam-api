@@ -1,6 +1,8 @@
 # Building
 
 The Steamworks SDK is not committed and is not shipped in the npm package.
+This follows the Node3D private third-party build input policy recorded in
+[ADR 0014](../../docs/adr/0014-private-third-party-build-inputs.md).
 Maintainer builds expect an unpacked SDK at:
 
 ```text
@@ -13,6 +15,10 @@ The folder should contain the normal Steamworks layout:
 .sdk/sdk/public/steam
 .sdk/sdk/redistributable_bin
 ```
+
+The private archive should be trimmed to those build and runtime inputs.
+Steamworks SDK folders such as `tools` and `steamworksexample` are not needed
+for addon builds.
 
 To hydrate that folder in CI, upload a private `steamworks-sdk.gz` archive and
 set:

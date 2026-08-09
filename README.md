@@ -43,16 +43,23 @@ for (const event of update()) {
 The initial binding covers lifecycle, callback pumping, basic app/user helpers,
 auth tickets, DLC metadata, and user stats/achievements.
 
+Methods are grouped by Steamworks interface rather than exported as one flat
+module. This keeps names close to Valve's API documentation and avoids a second
+Node3D-specific taxonomy for the full Steamworks surface.
+
 `steam`:
 
 - `steam.restartAppIfNecessary(appId)`
 - `steam.initEx()`
-- `init()`
 - `steam.shutdown()`
 - `steam.isSteamRunning()`
 - `steam.runCallbacks()`
-- `update()`
 - `steam.releaseCurrentThreadMemory()`
+
+Top-level helpers:
+
+- `init()` - calls `steam.initEx()` and throws when initialization fails.
+- `update()` - calls `steam.runCallbacks()` and then `callbacks.pollCallbacks()`.
 
 `callbacks`:
 
@@ -60,6 +67,7 @@ auth tickets, DLC metadata, and user stats/achievements.
 
 `user`:
 
+- `user.getHSteamUser()`
 - `user.getSteamId()`
 - `user.isLoggedOn()`
 - `user.getAuthSessionTicket()`
@@ -73,12 +81,19 @@ auth tickets, DLC metadata, and user stats/achievements.
 - `utils.getServerRealTime()`
 - `utils.getSteamUiLanguage()`
 - `utils.isOverlayEnabled()`
+- `utils.isSteamInBigPictureMode()`
 
 `apps`:
 
 - `apps.isSubscribed()`
+- `apps.isSubscribedApp(appId)`
 - `apps.isDlcInstalled(appId)`
+- `apps.isAppInstalled(appId)`
+- `apps.getCurrentGameLanguage()`
+- `apps.getAvailableGameLanguages()`
+- `apps.getDlcCount()`
 - `apps.getDlcDataByIndex(index)`
+- `apps.getAppInstallDir(appId)`
 
 `userStats`:
 
@@ -91,10 +106,22 @@ auth tickets, DLC metadata, and user stats/achievements.
 - `userStats.clearAchievement(name)`
 - `userStats.storeStats()`
 - `userStats.resetAllStats(achievementsToo)`
+- `userStats.getNumAchievements()`
+- `userStats.getAchievementName(index)`
+- `userStats.getAchievementDisplayAttribute(name, key)`
 - `userStats.getAchievementAndUnlockTime(name)`
 
-`update()` runs Steam callbacks and returns queued typed callback payloads such
-as `userStatsReceived`, `userStatsStored`, and `userAchievementStored`.
+`steam.runCallbacks()` maps to `SteamAPI_RunCallbacks`.
+`callbacks.pollCallbacks()` drains the Node3D callback queue.
+`update()` does both and returns queued typed callback payloads:
+
+- `userStatsReceived`: `{ gameId, userId, result }`
+- `userStatsStored`: `{ gameId, result }`
+- `userAchievementStored`: `{ gameId, name, currentProgress, maxProgress }`
+- `authSessionTicketResponse`: `{ result, currentProgress }`
+
+Steam IDs and game IDs are exposed as branded strings because Steamworks uses
+64-bit identifiers that should not be rounded through JavaScript numbers.
 
 ## Steamworks SDK Notice
 
