@@ -32,7 +32,7 @@ callback polling.
 
 ## Implementation Milestones
 
-- [ ] Phase 1: close easy parity gaps in existing namespaces.
+- [x] Phase 1: close easy parity gaps in existing namespaces.
   - `getAppBuildId`
   - `isSteamRunningOnSteamDeck`
   - UI language alias/mapping decision
@@ -43,8 +43,12 @@ callback polling.
   - `indicateAchievementProgress`
   - `getAchievementNames`
   - `setStat` convenience helper or documented split helpers
-- [ ] Phase 2: add typed enum exports and result/object types.
-- [ ] Phase 3: expand callback bridge to cover Greenworks event families.
+- [x] Phase 2: add typed enum exports.
+- [ ] Phase 2b: add typed result/object types for larger API families.
+- [x] Phase 3a: refactor callback bridge payloads and cover core Greenworks
+  event outcomes.
+- [ ] Phase 3b: expand callback bridge as friends, lobbies, P2P, UGC, and auth
+  event families land.
 - [ ] Phase 4: implement friends, SteamID object parity or string-first
   equivalents, avatars, chat, and rich presence.
 - [ ] Phase 5: implement remote storage/cloud and callback-style async wrappers.

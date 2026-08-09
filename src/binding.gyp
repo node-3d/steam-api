@@ -12,6 +12,8 @@
 				'cpp/apps.cpp',
 				'cpp/bindings.cpp',
 				'cpp/callbacks.cpp',
+				'cpp/enums.cpp',
+				'cpp/friends.cpp',
 				'cpp/steam-api.cpp',
 				'cpp/user-stats.cpp',
 				'cpp/user.cpp',

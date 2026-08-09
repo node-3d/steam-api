@@ -1,6 +1,8 @@
 #include "apps.hpp"
 #include "callbacks.hpp"
 #include "common.hpp"
+#include "enums.hpp"
+#include "friends.hpp"
 #include "steam-api.hpp"
 #include "user-stats.hpp"
 #include "user.hpp"
@@ -14,7 +16,9 @@ Napi::Object initModule(Napi::Env env, Napi::Object exports) {
 	exports.Set("user", steam_api::user::createNamespace(env));
 	exports.Set("utils", steam_api::utils::createNamespace(env));
 	exports.Set("apps", steam_api::apps::createNamespace(env));
+	exports.Set("friends", steam_api::friends::createNamespace(env));
 	exports.Set("userStats", steam_api::user_stats::createNamespace(env));
+	steam_api::enums::setEnumExports(env, exports);
 
 	JS_STEAM_CONSTANT(k_ESteamAPIInitResult_OK);
 	JS_STEAM_CONSTANT(k_ESteamAPIInitResult_FailedGeneric);

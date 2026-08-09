@@ -2,39 +2,45 @@
 
 ## Lifecycle, Settings, Apps, and Utils
 
-- [ ] `greenworks.initAPI()`
+- [x] `greenworks.initAPI()`
 - [x] `greenworks.init()`
 - [x] `greenworks.restartAppIfNecessary(appId)`
 - [x] `greenworks.isSteamRunning()`
-- [ ] `greenworks.isSteamRunningOnSteamDeck()`
+- [x] `greenworks.isSteamRunningOnSteamDeck()`
 - [x] `greenworks.getSteamId()`
 - [x] `greenworks.getAppId()`
-- [ ] `greenworks.getAppBuildId()`
+- [x] `greenworks.getAppBuildId()`
 - [x] `greenworks.getCurrentGameLanguage()`
-- [ ] `greenworks.getCurrentUILanguage()`
-- [ ] `greenworks.getCurrentGameInstallDir()`
+- [x] `greenworks.getCurrentUILanguage()`
+- [x] `greenworks.getCurrentGameInstallDir()`
 - [x] `greenworks.getAppInstallDir(appId, buffer, buffer_size)`
 - [ ] `greenworks.getNumberOfPlayers(success_callback, [error_callback])`
-- [ ] `greenworks.activateGameOverlay(option)`
-- [ ] `greenworks.activateGameOverlayToWebPage(url)`
-- [ ] `greenworks.activateGameOverlayToStore(appId, storeFlag)`
+- [x] `greenworks.activateGameOverlay(option)`
+- [x] `game-overlay-activated` event
+- [x] `greenworks.activateGameOverlayToWebPage(url)`
+- [x] `greenworks.activateGameOverlayToStore(appId, storeFlag)`
 - [x] `greenworks.isGameOverlayEnabled()`
 - [x] `greenworks.isSteamInBigPictureMode()`
 - [x] `greenworks.isSubscribedApp(appId)`
 - [x] `greenworks.isAppInstalled(appId)`
-- [ ] `greenworks.getImageSize(handle)`
-- [ ] `greenworks.getImageRGBA(handle)`
-- [ ] `greenworks.getIPCountry()`
-- [ ] `greenworks.getLaunchCommandLine()`
+- [x] `greenworks.getImageSize(handle)`
+- [x] `greenworks.getImageRGBA(handle)`
+- [x] `greenworks.getIPCountry()`
+- [x] `greenworks.getLaunchCommandLine()`
+- [x] `steam-servers-connected` event
+- [x] `steam-servers-disconnected` event
+- [x] `steam-server-connect-failure` event
+- [x] `steam-shutdown` event
+- [x] `new-url-launch-parameters` event
 
 ## DLC
 
 - [x] `greenworks.getDLCCount()`
 - [x] `greenworks.getDLCDataByIndex(index)`
 - [x] `greenworks.isDLCInstalled(dlc_app_id)`
-- [ ] `greenworks.installDLC(dlc_app_id)`
-- [ ] `greenworks.uninstallDLC(dlc_app_id)`
-- [ ] `dlc-installed` event
+- [x] `greenworks.installDLC(dlc_app_id)`
+- [x] `greenworks.uninstallDLC(dlc_app_id)`
+- [x] `dlc-installed` event
 
 ## Authentication
 
@@ -54,16 +60,16 @@
 
 ## Achievements and Stats
 
-- [ ] `greenworks.activateAchievement(achievement, success_callback, [error_callback])`
-- [ ] `greenworks.indicateAchievementProgress(achievement, current, max)`
-- [ ] `greenworks.getAchievement(achievement, success_callback, [error_callback])`
-- [ ] `greenworks.clearAchievement(achievement, success_callback, [error_callback])`
-- [ ] `greenworks.getAchievementNames()`
+- [x] `greenworks.activateAchievement(achievement, success_callback, [error_callback])`
+- [x] `greenworks.indicateAchievementProgress(achievement, current, max)`
+- [x] `greenworks.getAchievement(achievement, success_callback, [error_callback])`
+- [x] `greenworks.clearAchievement(achievement, success_callback, [error_callback])`
+- [x] `greenworks.getAchievementNames()`
 - [x] `greenworks.getNumberOfAchievements()`
 - [x] `greenworks.getStatInt(name)`
 - [x] `greenworks.getStatFloat(name)`
-- [ ] `greenworks.setStat(name, value)`
-- [ ] `greenworks.storeStats(success_callback, [error_callback])`
+- [x] `greenworks.setStat(name, value)`
+- [x] `greenworks.storeStats(success_callback, [error_callback])`
 - [x] `greenworks.resetAllStats(achievementsToo)`
 
 ## Cloud and Remote Storage
@@ -202,26 +208,26 @@
 ## Floating Gamepad Text Input
 
 - [ ] `greenworks.showFloatingGamepadTextInput(keyboardMode, x, y, width, height)`
-- [ ] `floating-gamepad-text-input-dismissed` event
+- [x] `floating-gamepad-text-input-dismissed` event
 
 ## Constants and Enums
 
 - [ ] `_version`
 - [ ] `EncryptedAppTicketSymmetricKeyLength`
-- [ ] `FriendFlags`
-- [ ] `FriendRelationship`
-- [ ] `PersonaChange`
-- [ ] `AccountType`
-- [ ] `ChatEntryType`
-- [ ] `ChatMemberStateChange`
-- [ ] `LobbyComparison`
-- [ ] `LobbyDistanceFilter`
-- [ ] `LobbyType`
-- [ ] `Result`
-- [ ] `UGCMatchingType`
-- [ ] `UGCQueryType`
-- [ ] `UserUGCList`
-- [ ] `UserUGCListSortOrder`
-- [ ] `UGCItemState`
-- [ ] `FloatingGamepadTextInputMode`
-- [ ] P2P send type enum
+- [x] `FriendFlags`
+- [x] `FriendRelationship`
+- [x] `PersonaChange`
+- [x] `AccountType`
+- [x] `ChatEntryType`
+- [x] `ChatMemberStateChange`
+- [x] `LobbyComparison`
+- [x] `LobbyDistanceFilter`
+- [x] `LobbyType`
+- [x] `Result`
+- [x] `UGCMatchingType`
+- [x] `UGCQueryType`
+- [x] `UserUGCList`
+- [x] `UserUGCListSortOrder`
+- [x] `UGCItemState`
+- [x] `FloatingGamepadTextInputMode`
+- [x] P2P send type enum

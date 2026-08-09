@@ -48,6 +48,37 @@ JS_METHOD(isAppInstalled) {
 	RET_BOOL(value->BIsAppInstalled(appId));
 }
 
+JS_METHOD(installDlc) {
+	NAPI_ENV;
+	REQ_UINT32_ARG(0, appId);
+	ISteamApps *value = steamApps(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	value->InstallDLC(appId);
+	RET_UNDEFINED;
+}
+
+JS_METHOD(uninstallDlc) {
+	NAPI_ENV;
+	REQ_UINT32_ARG(0, appId);
+	ISteamApps *value = steamApps(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	value->UninstallDLC(appId);
+	RET_UNDEFINED;
+}
+
+JS_METHOD(getAppBuildId) {
+	NAPI_ENV;
+	ISteamApps *value = steamApps(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	RET_NUM(value->GetAppBuildId());
+}
+
 JS_METHOD(getCurrentGameLanguage) {
 	NAPI_ENV;
 	ISteamApps *value = steamApps(env);
@@ -64,6 +95,28 @@ JS_METHOD(getAvailableGameLanguages) {
 		RET_UNDEFINED;
 	}
 	RET_STR(value->GetAvailableGameLanguages());
+}
+
+JS_METHOD(getCurrentGameInstallDir) {
+	NAPI_ENV;
+	ISteamApps *value = steamApps(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUtils *utils = SteamUtils();
+	if (utils == nullptr) {
+		JS_THROW("SteamUtils is not available. Call steam.initEx() first.");
+		RET_UNDEFINED;
+	}
+
+	std::vector<char> folder(4096);
+	uint32 size =
+	    value->GetAppInstallDir(utils->GetAppID(), folder.data(), static_cast<uint32>(folder.size()));
+	if (size == 0) {
+		RET_NULL;
+	}
+	RET_STR(folder.data());
 }
 
 JS_METHOD(getDlcCount) {
@@ -117,17 +170,34 @@ JS_METHOD(getAppInstallDir) {
 	RET_STR(folder.data());
 }
 
+JS_METHOD(getLaunchCommandLine) {
+	NAPI_ENV;
+	ISteamApps *value = steamApps(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	std::vector<char> commandLine(4096);
+	value->GetLaunchCommandLine(commandLine.data(), static_cast<int>(commandLine.size()));
+	RET_STR(commandLine.data());
+}
+
 Napi::Object createNamespace(Napi::Env env) {
 	Napi::Object value = JS_OBJECT;
 	value.Set("isSubscribed", Napi::Function::New(env, isSubscribed));
 	value.Set("isSubscribedApp", Napi::Function::New(env, isSubscribedApp));
 	value.Set("isDlcInstalled", Napi::Function::New(env, isDlcInstalled));
 	value.Set("isAppInstalled", Napi::Function::New(env, isAppInstalled));
+	value.Set("installDlc", Napi::Function::New(env, installDlc));
+	value.Set("uninstallDlc", Napi::Function::New(env, uninstallDlc));
+	value.Set("getAppBuildId", Napi::Function::New(env, getAppBuildId));
 	value.Set("getCurrentGameLanguage", Napi::Function::New(env, getCurrentGameLanguage));
 	value.Set("getAvailableGameLanguages", Napi::Function::New(env, getAvailableGameLanguages));
+	value.Set("getCurrentGameInstallDir", Napi::Function::New(env, getCurrentGameInstallDir));
 	value.Set("getDlcCount", Napi::Function::New(env, getDlcCount));
 	value.Set("getDlcDataByIndex", Napi::Function::New(env, getDlcDataByIndex));
 	value.Set("getAppInstallDir", Napi::Function::New(env, getAppInstallDir));
+	value.Set("getLaunchCommandLine", Napi::Function::New(env, getLaunchCommandLine));
 	return value;
 }
 } // namespace steam_api::apps

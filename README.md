@@ -43,8 +43,9 @@ for (const event of update()) {
 Migrating from Greenworks? See [GREENWORKS.md](GREENWORKS.md) for capability
 mappings and migration notes.
 
-The initial binding covers lifecycle, callback pumping, basic app/user helpers,
-auth tickets, DLC metadata, and user stats/achievements.
+The initial binding covers lifecycle, callback pumping, app/user/friends
+helpers, auth tickets, DLC metadata, image utilities, and user
+stats/achievements.
 
 Methods are grouped by Steamworks interface rather than exported as one flat
 module. This keeps names close to Valve's API documentation and avoids a second
@@ -83,8 +84,11 @@ Top-level helpers:
 - `utils.getIpCountry()`
 - `utils.getServerRealTime()`
 - `utils.getSteamUiLanguage()`
+- `utils.getImageSize(image)`
+- `utils.getImageRgba(image)`
 - `utils.isOverlayEnabled()`
 - `utils.isSteamInBigPictureMode()`
+- `utils.isSteamRunningOnSteamDeck()`
 
 `apps`:
 
@@ -92,36 +96,94 @@ Top-level helpers:
 - `apps.isSubscribedApp(appId)`
 - `apps.isDlcInstalled(appId)`
 - `apps.isAppInstalled(appId)`
+- `apps.installDlc(appId)`
+- `apps.uninstallDlc(appId)`
+- `apps.getAppBuildId()`
 - `apps.getCurrentGameLanguage()`
 - `apps.getAvailableGameLanguages()`
+- `apps.getCurrentGameInstallDir()`
 - `apps.getDlcCount()`
 - `apps.getDlcDataByIndex(index)`
 - `apps.getAppInstallDir(appId)`
+- `apps.getLaunchCommandLine()`
+
+`friends`:
+
+- `friends.activateGameOverlay(dialog)`
+- `friends.activateGameOverlayToWebPage(url, mode?)`
+- `friends.activateGameOverlayToStore(appId, flag)`
 
 `userStats`:
 
 - `userStats.getStatInt(name)`
 - `userStats.getStatFloat(name)`
+- `userStats.setStat(name, value)`
 - `userStats.setStatInt(name, value)`
 - `userStats.setStatFloat(name, value)`
 - `userStats.getAchievement(name)`
 - `userStats.setAchievement(name)`
 - `userStats.clearAchievement(name)`
+- `userStats.indicateAchievementProgress(name, currentProgress, maxProgress)`
 - `userStats.storeStats()`
 - `userStats.resetAllStats(achievementsToo)`
 - `userStats.getNumAchievements()`
+- `userStats.getAchievementNames()`
 - `userStats.getAchievementName(index)`
 - `userStats.getAchievementDisplayAttribute(name, key)`
 - `userStats.getAchievementAndUnlockTime(name)`
+
+Top-level enum objects:
+
+- `FriendFlags`
+- `FriendRelationship`
+- `PersonaChange`
+- `AccountType`
+- `ChatEntryType`
+- `ChatMemberStateChange`
+- `LobbyComparison`
+- `LobbyDistanceFilter`
+- `LobbyType`
+- `Result`
+- `UGCMatchingType`
+- `UGCQueryType`
+- `UserUGCList`
+- `UserUGCListSortOrder`
+- `UGCItemState`
+- `FloatingGamepadTextInputMode`
+- `P2PSendType`
 
 `steam.runCallbacks()` maps to `SteamAPI_RunCallbacks`.
 `callbacks.pollCallbacks()` drains the Node3D callback queue.
 `update()` does both and returns queued typed callback payloads:
 
-- `userStatsReceived`: `{ gameId, userId, result }`
-- `userStatsStored`: `{ gameId, result }`
-- `userAchievementStored`: `{ gameId, name, currentProgress, maxProgress }`
-- `authSessionTicketResponse`: `{ result, currentProgress }`
+- `user-stats-received`: `{ gameId, userId, result }`
+- `user-stats-stored`: `{ gameId, result }`
+- `user-achievement-stored`: `{ gameId, name, currentProgress, maxProgress }`
+- `auth-session-ticket-response`: `{ handle, result }`
+- `game-overlay-activated`: `{ active, userInitiated, appId, overlayPid }`
+- `steam-servers-connected`: `{}`
+- `steam-servers-disconnected`: `{ result }`
+- `steam-server-connect-failure`: `{ result, stillRetrying }`
+- `steam-shutdown`: `{}`
+- `dlc-installed`: `{ appId }`
+- `new-url-launch-parameters`: `{}`
+- `floating-gamepad-text-input-dismissed`: `{}`
+
+```ts
+for (const event of update()) {
+	switch (event.type) {
+		case 'game-overlay-activated':
+			console.log(event.active ? 'overlay opened' : 'overlay closed');
+			break;
+		case 'dlc-installed':
+			console.log('DLC installed', event.appId);
+			break;
+		case 'auth-session-ticket-response':
+			console.log('ticket response', event.handle, event.result);
+			break;
+	}
+}
+```
 
 Steam IDs and game IDs are exposed as branded strings because Steamworks uses
 64-bit identifiers that should not be rounded through JavaScript numbers.
@@ -131,10 +193,8 @@ Steam IDs and game IDs are exposed as branded strings because Steamworks uses
 Valve's Steamworks SDK files are not part of this repository.
 This repository contains Node3D binding code only.
 
-Maintainers must provide the SDK separately under Valve's Steamworks
-terms when building native binaries.
-
-See [BUILD.md](BUILD.md) for local and CI build setup.
+Maintainers building native binaries from a source checkout must provide the SDK
+separately under Valve's Steamworks terms.
 
 ## Binary Origin
 

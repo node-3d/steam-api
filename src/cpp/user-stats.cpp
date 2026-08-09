@@ -1,5 +1,8 @@
 #include "user-stats.hpp"
 
+#include <cmath>
+#include <limits>
+
 namespace steam_api::user_stats {
 ISteamUserStats *steamUserStats(Napi::Env env) {
 	ISteamUserStats *value = SteamUserStats();
@@ -39,6 +42,24 @@ JS_METHOD(getStatFloat) {
 		RET_NULL;
 	}
 	RET_NUM(result);
+}
+
+JS_METHOD(setStat) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, name);
+	REQ_DOUBLE_ARG(1, value);
+
+	ISteamUserStats *stats = steamUserStats(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	if (std::trunc(value) == value && value >= std::numeric_limits<int32_t>::min() &&
+	    value <= std::numeric_limits<int32_t>::max()) {
+		RET_BOOL(stats->SetStat(name.c_str(), static_cast<int32>(value)));
+	}
+
+	RET_BOOL(stats->SetStat(name.c_str(), static_cast<float>(value)));
 }
 
 JS_METHOD(setStatInt) {
@@ -107,6 +128,20 @@ JS_METHOD(clearAchievement) {
 	RET_BOOL(value->ClearAchievement(name.c_str()));
 }
 
+JS_METHOD(indicateAchievementProgress) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, name);
+	REQ_UINT32_ARG(1, currentProgress);
+	REQ_UINT32_ARG(2, maxProgress);
+
+	ISteamUserStats *value = steamUserStats(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(value->IndicateAchievementProgress(name.c_str(), currentProgress, maxProgress));
+}
+
 JS_METHOD(storeStats) {
 	NAPI_ENV;
 	ISteamUserStats *value = steamUserStats(env);
@@ -135,6 +170,22 @@ JS_METHOD(getNumAchievements) {
 		RET_UNDEFINED;
 	}
 	RET_NUM(value->GetNumAchievements());
+}
+
+JS_METHOD(getAchievementNames) {
+	NAPI_ENV;
+	ISteamUserStats *value = steamUserStats(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint32 count = value->GetNumAchievements();
+	Napi::Array names = Napi::Array::New(env, count);
+	for (uint32 i = 0; i < count; i++) {
+		const char *name = value->GetAchievementName(i);
+		names.Set(i, name == nullptr ? JS_NULL : JS_STR(name));
+	}
+	RET_VALUE(names);
 }
 
 JS_METHOD(getAchievementName) {
@@ -195,14 +246,17 @@ Napi::Object createNamespace(Napi::Env env) {
 	Napi::Object value = JS_OBJECT;
 	value.Set("getStatInt", Napi::Function::New(env, getStatInt));
 	value.Set("getStatFloat", Napi::Function::New(env, getStatFloat));
+	value.Set("setStat", Napi::Function::New(env, setStat));
 	value.Set("setStatInt", Napi::Function::New(env, setStatInt));
 	value.Set("setStatFloat", Napi::Function::New(env, setStatFloat));
 	value.Set("getAchievement", Napi::Function::New(env, getAchievement));
 	value.Set("setAchievement", Napi::Function::New(env, setAchievement));
 	value.Set("clearAchievement", Napi::Function::New(env, clearAchievement));
+	value.Set("indicateAchievementProgress", Napi::Function::New(env, indicateAchievementProgress));
 	value.Set("storeStats", Napi::Function::New(env, storeStats));
 	value.Set("resetAllStats", Napi::Function::New(env, resetAllStats));
 	value.Set("getNumAchievements", Napi::Function::New(env, getNumAchievements));
+	value.Set("getAchievementNames", Napi::Function::New(env, getAchievementNames));
 	value.Set("getAchievementName", Napi::Function::New(env, getAchievementName));
 	value.Set("getAchievementDisplayAttribute", Napi::Function::New(env, getAchievementDisplayAttribute));
 	value.Set("getAchievementAndUnlockTime", Napi::Function::New(env, getAchievementAndUnlockTime));
