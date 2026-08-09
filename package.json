@@ -17,11 +17,12 @@
 		"gyp"
 	],
 	"files": [
-		"BUILD.md",
 		"dist",
+		"GREENWORKS.md",
 		"install.js",
 		"LICENSE",
 		"package.json",
+		"README.md",
 		"tsconfig.json"
 	],
 	"engines": {

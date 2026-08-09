@@ -40,6 +40,9 @@ for (const event of update()) {
 
 ## API Surface
 
+Migrating from Greenworks? See [GREENWORKS.md](GREENWORKS.md) for capability
+mappings and migration notes.
+
 The initial binding covers lifecycle, callback pumping, basic app/user helpers,
 auth tickets, DLC metadata, and user stats/achievements.
 
