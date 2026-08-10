@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { SDK_ARCHIVE_PATH, SDK_CACHE_DIR, SDK_DIR, sdkExists } from './paths.ts';
@@ -89,7 +90,9 @@ const verifyHash = async (filePath: string, isRequired: boolean): Promise<void> 
 const unpackArchive = async (archivePath: string): Promise<void> => {
 	await fs.rm(SDK_DIR, { recursive: true, force: true });
 	await fs.mkdir(SDK_DIR, { recursive: true });
-	await execFile('tar', ['-xzf', archivePath, '--directory', SDK_DIR]);
+	await execFile('tar', ['-xzf', path.basename(archivePath), '--directory', 'sdk'], {
+		cwd: SDK_CACHE_DIR,
+	});
 	assertSdk();
 };
 
