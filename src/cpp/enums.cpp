@@ -415,5 +415,38 @@ void setEnumExports(Napi::Env env, Napi::Object exports) {
 	        { "ReliableWithBuffering", k_EP2PSendReliableWithBuffering },
 	    }
 	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "BeginAuthSessionResult",
+	    {
+	        { "OK", k_EBeginAuthSessionResultOK },
+	        { "InvalidTicket", k_EBeginAuthSessionResultInvalidTicket },
+	        { "DuplicateRequest", k_EBeginAuthSessionResultDuplicateRequest },
+	        { "InvalidVersion", k_EBeginAuthSessionResultInvalidVersion },
+	        { "GameMismatch", k_EBeginAuthSessionResultGameMismatch },
+	        { "ExpiredTicket", k_EBeginAuthSessionResultExpiredTicket },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "AuthSessionResponse",
+	    {
+	        { "OK", k_EAuthSessionResponseOK },
+	        { "UserNotConnectedToSteam", k_EAuthSessionResponseUserNotConnectedToSteam },
+	        { "NoLicenseOrExpired", k_EAuthSessionResponseNoLicenseOrExpired },
+	        { "VacBanned", k_EAuthSessionResponseVACBanned },
+	        { "LoggedInElsewhere", k_EAuthSessionResponseLoggedInElseWhere },
+	        { "VacCheckTimedOut", k_EAuthSessionResponseVACCheckTimedOut },
+	        { "AuthTicketCanceled", k_EAuthSessionResponseAuthTicketCanceled },
+	        { "AuthTicketInvalidAlreadyUsed", k_EAuthSessionResponseAuthTicketInvalidAlreadyUsed },
+	        { "AuthTicketInvalid", k_EAuthSessionResponseAuthTicketInvalid },
+	        { "PublisherIssuedBan", k_EAuthSessionResponsePublisherIssuedBan },
+	        { "AuthTicketNetworkIdentityFailure", k_EAuthSessionResponseAuthTicketNetworkIdentityFailure },
+	    }
+	);
 }
 } // namespace steam_api::enums

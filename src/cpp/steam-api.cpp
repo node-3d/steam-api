@@ -1,6 +1,10 @@
 #include "steam-api.hpp"
 
 #include "callbacks.hpp"
+#include "matchmaking.hpp"
+#include "ugc.hpp"
+#include "user.hpp"
+#include "user-stats.hpp"
 
 namespace steam_api {
 bool initialized = false;
@@ -41,6 +45,10 @@ JS_METHOD(initEx) {
 
 JS_METHOD(shutdown) {
 	NAPI_ENV;
+	ugc::rejectPendingPromises("Steam API shut down before pending UGC request completed.");
+	matchmaking::rejectPendingPromises("Steam API shut down before pending matchmaking request completed.");
+	user::rejectPendingPromises("Steam API shut down before pending user auth request completed.");
+	user_stats::rejectPendingPromises("Steam API shut down before pending user stats request completed.");
 	callbacks::unregisterBridge();
 	SteamAPI_Shutdown();
 	setInitialized(false);

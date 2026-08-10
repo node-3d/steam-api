@@ -133,6 +133,33 @@ JS_METHOD(isSteamRunningOnSteamDeck) {
 	RET_BOOL(value->IsSteamRunningOnSteamDeck());
 }
 
+JS_METHOD(showFloatingGamepadTextInput) {
+	NAPI_ENV;
+	REQ_INT32_ARG(0, keyboardMode);
+	REQ_INT32_ARG(1, x);
+	REQ_INT32_ARG(2, y);
+	REQ_INT32_ARG(3, width);
+	REQ_INT32_ARG(4, height);
+
+	ISteamUtils *value = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(value->ShowFloatingGamepadTextInput(
+	    static_cast<EFloatingGamepadTextInputMode>(keyboardMode), x, y, width, height
+	));
+}
+
+JS_METHOD(dismissFloatingGamepadTextInput) {
+	NAPI_ENV;
+	ISteamUtils *value = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	RET_BOOL(value->DismissFloatingGamepadTextInput());
+}
+
 Napi::Object createNamespace(Napi::Env env) {
 	Napi::Object value = JS_OBJECT;
 	value.Set("getAppId", Napi::Function::New(env, getAppId));
@@ -145,6 +172,8 @@ Napi::Object createNamespace(Napi::Env env) {
 	value.Set("isOverlayEnabled", Napi::Function::New(env, isOverlayEnabled));
 	value.Set("isSteamInBigPictureMode", Napi::Function::New(env, isSteamInBigPictureMode));
 	value.Set("isSteamRunningOnSteamDeck", Napi::Function::New(env, isSteamRunningOnSteamDeck));
+	value.Set("showFloatingGamepadTextInput", Napi::Function::New(env, showFloatingGamepadTextInput));
+	value.Set("dismissFloatingGamepadTextInput", Napi::Function::New(env, dismissFloatingGamepadTextInput));
 	return value;
 }
 } // namespace steam_api::utils

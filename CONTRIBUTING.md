@@ -45,16 +45,32 @@ callback polling.
   - `setStat` convenience helper or documented split helpers
 - [x] Phase 2: add typed enum exports.
 - [ ] Phase 2b: add typed result/object types for larger API families.
+  - [x] UGC published file ID, UGC handle, and item install info types.
+  - [x] UGC query details and async query result types.
+  - [x] UGC download and unsubscribe result types.
+  - [x] UGC file share, publish, and update result types.
+  - [x] UGC composed publish/update result types.
+  - [x] UGC sync result types.
 - [x] Phase 3a: refactor callback bridge payloads and cover core Greenworks
   event outcomes.
 - [ ] Phase 3b: expand callback bridge as friends, lobbies, P2P, UGC, and auth
   event families land.
+  - [x] Friends callback events.
+  - [x] Lobby callback events.
+  - [x] P2P networking callback events.
+  - [x] Auth ticket callback events.
 - [ ] Phase 4: implement friends, SteamID object parity or string-first
   equivalents, avatars, chat, and rich presence.
+  - [x] SteamID string-first helper namespace.
+  - [x] Friends, avatars, chat message, rich presence, and played-with methods.
 - [ ] Phase 5: implement remote storage/cloud and callback-style async wrappers.
+  - [x] Cloud text/file writes, reads, delete, settings, quota, and enumeration.
 - [ ] Phase 6: implement matchmaking/lobbies and P2P networking.
-- [ ] Phase 7: implement workshop/UGC and archive utility helpers if still
-  desired.
+  - [x] Matchmaking lobby methods.
+  - [x] P2P packet/session methods.
+- [x] Phase 6b: implement auth session and encrypted app ticket helpers.
+- [x] Phase 6c: implement current player count and floating gamepad text input.
+- [x] Phase 7: implement workshop/UGC equivalents.
 - [ ] Phase 8: keep `GREENWORKS.md` migration mappings current for implemented
   capability families.
 

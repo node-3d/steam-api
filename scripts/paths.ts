@@ -6,6 +6,10 @@ import path from 'node:path';
 type TPlatformRedist = Readonly<{
 	dir: string;
 	files: readonly string[];
+	extraFiles?: readonly Readonly<{
+		dir: string;
+		file: string;
+	}>[];
 }>;
 
 export const PACKAGE_ROOT = path.resolve(import.meta.dirname, '..');
@@ -27,13 +31,26 @@ export const getPlatformRedist = (): TPlatformRedist => {
 		return {
 			dir: path.join(SDK_REDIST_DIR, 'win64'),
 			files: ['steam_api64.dll'],
+			extraFiles: [
+				{
+					dir: path.join(SDK_STEAM_INCLUDE_DIR, 'lib', 'win64'),
+					file: 'sdkencryptedappticket64.dll',
+				},
+			],
 		};
 	}
 
 	if (process.platform === 'linux') {
+		const platformDir = process.arch === 'arm64' ? 'linuxarm64' : 'linux64';
 		return {
-			dir: path.join(SDK_REDIST_DIR, process.arch === 'arm64' ? 'linuxarm64' : 'linux64'),
+			dir: path.join(SDK_REDIST_DIR, platformDir),
 			files: ['libsteam_api.so'],
+			extraFiles: [
+				{
+					dir: path.join(SDK_STEAM_INCLUDE_DIR, 'lib', platformDir),
+					file: 'libsdkencryptedappticket.so',
+				},
+			],
 		};
 	}
 
@@ -41,6 +58,12 @@ export const getPlatformRedist = (): TPlatformRedist => {
 		return {
 			dir: path.join(SDK_REDIST_DIR, 'osx'),
 			files: ['libsteam_api.dylib'],
+			extraFiles: [
+				{
+					dir: path.join(SDK_STEAM_INCLUDE_DIR, 'lib', 'osx'),
+					file: 'libsdkencryptedappticket.dylib',
+				},
+			],
 		};
 	}
 

@@ -1,5 +1,7 @@
 #include "callbacks.hpp"
 
+#include "user.hpp"
+
 #include <utility>
 
 namespace steam_api::callbacks {
@@ -105,7 +107,23 @@ class CallbackBridge {
 		_userStatsStored.Register(this, &CallbackBridge::onUserStatsStored);
 		_userAchievementStored.Register(this, &CallbackBridge::onUserAchievementStored);
 		_authTicketResponse.Register(this, &CallbackBridge::onAuthTicketResponse);
+		_getTicketForWebApiResponse.Register(this, &CallbackBridge::onGetTicketForWebApiResponse);
+		_validateAuthTicketResponse.Register(this, &CallbackBridge::onValidateAuthTicketResponse);
 		_gameOverlayActivated.Register(this, &CallbackBridge::onGameOverlayActivated);
+		_personaStateChange.Register(this, &CallbackBridge::onPersonaStateChange);
+		_avatarImageLoaded.Register(this, &CallbackBridge::onAvatarImageLoaded);
+		_gameConnectedFriendChatMessage.Register(this, &CallbackBridge::onGameConnectedFriendChatMessage);
+		_gameRichPresenceJoinRequested.Register(this, &CallbackBridge::onGameRichPresenceJoinRequested);
+		_lobbyCreated.Register(this, &CallbackBridge::onLobbyCreated);
+		_lobbyDataUpdate.Register(this, &CallbackBridge::onLobbyDataUpdate);
+		_lobbyEnter.Register(this, &CallbackBridge::onLobbyEnter);
+		_lobbyInvite.Register(this, &CallbackBridge::onLobbyInvite);
+		_gameLobbyJoinRequested.Register(this, &CallbackBridge::onGameLobbyJoinRequested);
+		_lobbyMatchList.Register(this, &CallbackBridge::onLobbyMatchList);
+		_lobbyChatUpdate.Register(this, &CallbackBridge::onLobbyChatUpdate);
+		_lobbyChatMsg.Register(this, &CallbackBridge::onLobbyChatMsg);
+		_p2pSessionRequest.Register(this, &CallbackBridge::onP2PSessionRequest);
+		_p2pSessionConnectFail.Register(this, &CallbackBridge::onP2PSessionConnectFail);
 		_steamServersConnected.Register(this, &CallbackBridge::onSteamServersConnected);
 		_steamServersDisconnected.Register(this, &CallbackBridge::onSteamServersDisconnected);
 		_steamServerConnectFailure.Register(this, &CallbackBridge::onSteamServerConnectFailure);
@@ -127,7 +145,23 @@ class CallbackBridge {
 		_userStatsStored.Unregister();
 		_userAchievementStored.Unregister();
 		_authTicketResponse.Unregister();
+		_getTicketForWebApiResponse.Unregister();
+		_validateAuthTicketResponse.Unregister();
 		_gameOverlayActivated.Unregister();
+		_personaStateChange.Unregister();
+		_avatarImageLoaded.Unregister();
+		_gameConnectedFriendChatMessage.Unregister();
+		_gameRichPresenceJoinRequested.Unregister();
+		_lobbyCreated.Unregister();
+		_lobbyDataUpdate.Unregister();
+		_lobbyEnter.Unregister();
+		_lobbyInvite.Unregister();
+		_gameLobbyJoinRequested.Unregister();
+		_lobbyMatchList.Unregister();
+		_lobbyChatUpdate.Unregister();
+		_lobbyChatMsg.Unregister();
+		_p2pSessionRequest.Unregister();
+		_p2pSessionConnectFail.Unregister();
 		_steamServersConnected.Unregister();
 		_steamServersDisconnected.Unregister();
 		_steamServerConnectFailure.Unregister();
@@ -189,12 +223,148 @@ class CallbackBridge {
 		_events.push_back(event);
 	}
 
+	void onGetTicketForWebApiResponse(GetTicketForWebApiResponse_t *param) {
+		user::handleGetTicketForWebApiResponse(param);
+
+		Event event = makeEventData("auth-ticket-for-web-api-response");
+		event.fields.push_back(makeUint32Field("handle", static_cast<uint32_t>(param->m_hAuthTicket)));
+		event.fields.push_back(makeInt32Field("result", static_cast<int32_t>(param->m_eResult)));
+		event.fields.push_back(makeInt32Field("ticketSize", param->m_cubTicket));
+		_events.push_back(event);
+	}
+
+	void onValidateAuthTicketResponse(ValidateAuthTicketResponse_t *param) {
+		Event event = makeEventData("validate-auth-ticket");
+		event.fields.push_back(makeUint64StringField("steamId", param->m_SteamID.ConvertToUint64()));
+		event.fields.push_back(
+		    makeInt32Field("authSessionResponse", static_cast<int32_t>(param->m_eAuthSessionResponse))
+		);
+		event.fields.push_back(
+		    makeUint64StringField("ownerSteamId", param->m_OwnerSteamID.ConvertToUint64())
+		);
+		_events.push_back(event);
+	}
+
 	void onGameOverlayActivated(GameOverlayActivated_t *param) {
 		Event event = makeEventData("game-overlay-activated");
 		event.fields.push_back(makeBoolField("active", param->m_bActive != 0));
 		event.fields.push_back(makeBoolField("userInitiated", param->m_bUserInitiated));
 		event.fields.push_back(makeUint32Field("appId", param->m_nAppID));
 		event.fields.push_back(makeUint32Field("overlayPid", param->m_dwOverlayPID));
+		_events.push_back(event);
+	}
+
+	void onPersonaStateChange(PersonaStateChange_t *param) {
+		Event event = makeEventData("persona-state-change");
+		event.fields.push_back(makeUint64StringField("steamId", param->m_ulSteamID));
+		event.fields.push_back(makeInt32Field("changeFlags", param->m_nChangeFlags));
+		_events.push_back(event);
+	}
+
+	void onAvatarImageLoaded(AvatarImageLoaded_t *param) {
+		Event event = makeEventData("avatar-image-loaded");
+		event.fields.push_back(makeUint64StringField("steamId", param->m_steamID.ConvertToUint64()));
+		event.fields.push_back(makeInt32Field("image", param->m_iImage));
+		event.fields.push_back(makeInt32Field("width", param->m_iWide));
+		event.fields.push_back(makeInt32Field("height", param->m_iTall));
+		_events.push_back(event);
+	}
+
+	void onGameConnectedFriendChatMessage(GameConnectedFriendChatMsg_t *param) {
+		Event event = makeEventData("game-connected-friend-chat-message");
+		event.fields.push_back(makeUint64StringField("steamId", param->m_steamIDUser.ConvertToUint64()));
+		event.fields.push_back(makeInt32Field("messageId", param->m_iMessageID));
+		_events.push_back(event);
+	}
+
+	void onGameRichPresenceJoinRequested(GameRichPresenceJoinRequested_t *param) {
+		Event event = makeEventData("rich-presence-join-requested");
+		event.fields.push_back(
+		    makeUint64StringField("steamIdFriend", param->m_steamIDFriend.ConvertToUint64())
+		);
+		event.fields.push_back(makeStringField("connect", param->m_rgchConnect));
+		_events.push_back(event);
+	}
+
+	void onLobbyCreated(LobbyCreated_t *param) {
+		Event event = makeEventData("lobby-created");
+		event.fields.push_back(makeInt32Field("result", static_cast<int32_t>(param->m_eResult)));
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		_events.push_back(event);
+	}
+
+	void onLobbyDataUpdate(LobbyDataUpdate_t *param) {
+		Event event = makeEventData("lobby-data-update");
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		event.fields.push_back(makeUint64StringField("steamIdMember", param->m_ulSteamIDMember));
+		event.fields.push_back(makeBoolField("success", param->m_bSuccess != 0));
+		_events.push_back(event);
+	}
+
+	void onLobbyEnter(LobbyEnter_t *param) {
+		Event event = makeEventData("lobby-enter");
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		event.fields.push_back(makeUint32Field("chatPermissions", param->m_rgfChatPermissions));
+		event.fields.push_back(makeBoolField("locked", param->m_bLocked));
+		event.fields.push_back(makeUint32Field("response", param->m_EChatRoomEnterResponse));
+		_events.push_back(event);
+	}
+
+	void onLobbyInvite(LobbyInvite_t *param) {
+		Event event = makeEventData("lobby-invite");
+		event.fields.push_back(makeUint64StringField("steamIdUser", param->m_ulSteamIDUser));
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		event.fields.push_back(makeUint64StringField("gameId", param->m_ulGameID));
+		_events.push_back(event);
+	}
+
+	void onGameLobbyJoinRequested(GameLobbyJoinRequested_t *param) {
+		Event event = makeEventData("lobby-join-requested");
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_steamIDLobby.ConvertToUint64()));
+		event.fields.push_back(
+		    makeUint64StringField("steamIdFriend", param->m_steamIDFriend.ConvertToUint64())
+		);
+		_events.push_back(event);
+	}
+
+	void onLobbyMatchList(LobbyMatchList_t *param) {
+		Event event = makeEventData("lobby-match-list");
+		event.fields.push_back(makeUint32Field("lobbiesMatching", param->m_nLobbiesMatching));
+		_events.push_back(event);
+	}
+
+	void onLobbyChatUpdate(LobbyChatUpdate_t *param) {
+		Event event = makeEventData("lobby-chat-update");
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		event.fields.push_back(makeUint64StringField("steamIdUserChanged", param->m_ulSteamIDUserChanged));
+		event.fields.push_back(makeUint64StringField("steamIdMakingChange", param->m_ulSteamIDMakingChange));
+		event.fields.push_back(makeUint32Field("stateChange", param->m_rgfChatMemberStateChange));
+		_events.push_back(event);
+	}
+
+	void onLobbyChatMsg(LobbyChatMsg_t *param) {
+		Event event = makeEventData("lobby-chat-msg");
+		event.fields.push_back(makeUint64StringField("lobbyId", param->m_ulSteamIDLobby));
+		event.fields.push_back(makeUint64StringField("steamIdUser", param->m_ulSteamIDUser));
+		event.fields.push_back(makeInt32Field("chatEntryType", param->m_eChatEntryType));
+		event.fields.push_back(makeUint32Field("chatId", param->m_iChatID));
+		_events.push_back(event);
+	}
+
+	void onP2PSessionRequest(P2PSessionRequest_t *param) {
+		Event event = makeEventData("p2p-session-request");
+		event.fields.push_back(
+		    makeUint64StringField("steamIdRemote", param->m_steamIDRemote.ConvertToUint64())
+		);
+		_events.push_back(event);
+	}
+
+	void onP2PSessionConnectFail(P2PSessionConnectFail_t *param) {
+		Event event = makeEventData("p2p-session-connect-fail");
+		event.fields.push_back(
+		    makeUint64StringField("steamIdRemote", param->m_steamIDRemote.ConvertToUint64())
+		);
+		event.fields.push_back(makeInt32Field("sessionError", param->m_eP2PSessionError));
 		_events.push_back(event);
 	}
 
@@ -243,7 +413,23 @@ class CallbackBridge {
 	CCallbackManual<CallbackBridge, UserStatsStored_t> _userStatsStored;
 	CCallbackManual<CallbackBridge, UserAchievementStored_t> _userAchievementStored;
 	CCallbackManual<CallbackBridge, GetAuthSessionTicketResponse_t> _authTicketResponse;
+	CCallbackManual<CallbackBridge, GetTicketForWebApiResponse_t> _getTicketForWebApiResponse;
+	CCallbackManual<CallbackBridge, ValidateAuthTicketResponse_t> _validateAuthTicketResponse;
 	CCallbackManual<CallbackBridge, GameOverlayActivated_t> _gameOverlayActivated;
+	CCallbackManual<CallbackBridge, PersonaStateChange_t> _personaStateChange;
+	CCallbackManual<CallbackBridge, AvatarImageLoaded_t> _avatarImageLoaded;
+	CCallbackManual<CallbackBridge, GameConnectedFriendChatMsg_t> _gameConnectedFriendChatMessage;
+	CCallbackManual<CallbackBridge, GameRichPresenceJoinRequested_t> _gameRichPresenceJoinRequested;
+	CCallbackManual<CallbackBridge, LobbyCreated_t> _lobbyCreated;
+	CCallbackManual<CallbackBridge, LobbyDataUpdate_t> _lobbyDataUpdate;
+	CCallbackManual<CallbackBridge, LobbyEnter_t> _lobbyEnter;
+	CCallbackManual<CallbackBridge, LobbyInvite_t> _lobbyInvite;
+	CCallbackManual<CallbackBridge, GameLobbyJoinRequested_t> _gameLobbyJoinRequested;
+	CCallbackManual<CallbackBridge, LobbyMatchList_t> _lobbyMatchList;
+	CCallbackManual<CallbackBridge, LobbyChatUpdate_t> _lobbyChatUpdate;
+	CCallbackManual<CallbackBridge, LobbyChatMsg_t> _lobbyChatMsg;
+	CCallbackManual<CallbackBridge, P2PSessionRequest_t> _p2pSessionRequest;
+	CCallbackManual<CallbackBridge, P2PSessionConnectFail_t> _p2pSessionConnectFail;
 	CCallbackManual<CallbackBridge, SteamServersConnected_t> _steamServersConnected;
 	CCallbackManual<CallbackBridge, SteamServersDisconnected_t> _steamServersDisconnected;
 	CCallbackManual<CallbackBridge, SteamServerConnectFailure_t> _steamServerConnectFailure;

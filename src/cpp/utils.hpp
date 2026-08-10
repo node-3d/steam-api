@@ -13,6 +13,8 @@ JS_METHOD(getImageRgba);
 JS_METHOD(isOverlayEnabled);
 JS_METHOD(isSteamInBigPictureMode);
 JS_METHOD(isSteamRunningOnSteamDeck);
+JS_METHOD(showFloatingGamepadTextInput);
+JS_METHOD(dismissFloatingGamepadTextInput);
 
 Napi::Object createNamespace(Napi::Env env);
 } // namespace steam_api::utils

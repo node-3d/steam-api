@@ -4,6 +4,11 @@ import '@node-3d/segfault';
 
 export type TSteamId = string & { readonly __steamId: unique symbol };
 export type TGameId = string & { readonly __gameId: unique symbol };
+export type TSteamLobbyId = TSteamId & { readonly __steamLobbyId: unique symbol };
+export type TSteamPublishedFileId = string & {
+	readonly __steamPublishedFileId: unique symbol;
+};
+export type TSteamUgcHandle = string & { readonly __steamUgcHandle: unique symbol };
 
 export type TSteamInitResult = Readonly<{
 	result: number;
@@ -25,6 +30,199 @@ export type TSteamDlcData = Readonly<{
 export type TSteamImageSize = Readonly<{
 	width: number;
 	height: number;
+}>;
+
+export type TSteamFriendMessage = Readonly<{
+	message: string;
+	chatEntryType: number;
+}>;
+
+export type TSteamFriendGameInfo = Readonly<{
+	gameId: TGameId;
+	gameIp: number;
+	gamePort: number;
+	queryPort: number;
+	steamIdLobby: TSteamLobbyId;
+}>;
+
+export type TSteamLobbyCreated = Readonly<{
+	result: number;
+	lobbyId: TSteamLobbyId;
+}>;
+
+export type TSteamLobbyEnter = Readonly<{
+	lobbyId: TSteamLobbyId;
+	chatPermissions: number;
+	locked: boolean;
+	response: number;
+}>;
+
+export type TSteamLobbyMatchList = Readonly<{
+	lobbiesMatching: number;
+}>;
+
+export type TSteamLobbyData = Readonly<{
+	key: string;
+	value: string;
+}>;
+
+export type TSteamLobbyChatEntry = Readonly<{
+	steamIdUser: TSteamId;
+	data: Buffer;
+	chatEntryType: number;
+}>;
+
+export type TSteamP2PPacket = Readonly<{
+	data: Buffer;
+	steamIdRemote: TSteamId;
+	messageSize: number;
+}>;
+
+export type TSteamP2PSessionConnectionState = Readonly<{
+	connectionActive: boolean;
+	connecting: boolean;
+	sessionError: number;
+	usingRelay: boolean;
+	bytesQueuedForSend: number;
+	packetsQueuedForSend: number;
+	remoteIp: number;
+	remotePort: number;
+}>;
+
+export type TSteamP2PSessionState = Readonly<{
+	result: boolean;
+	connectionState: TSteamP2PSessionConnectionState;
+}>;
+
+export type TSteamUgcItemInstallInfo = Readonly<{
+	sizeOnDisk: string;
+	folder: string;
+	timestamp: number;
+}>;
+
+export type TSteamUgcQueryOptions = Readonly<{
+	appId?: number;
+	page?: number;
+}>;
+
+export type TSteamUgcDetails = Readonly<{
+	acceptedForUse: boolean;
+	banned: boolean;
+	tagsTruncated: boolean;
+	fileType: number;
+	result: number;
+	visibility: number;
+	score: number;
+	file: TSteamUgcHandle;
+	fileName: string;
+	fileSize: number;
+	previewFile: TSteamUgcHandle;
+	previewFileSize: number;
+	steamIdOwner: TSteamId;
+	consumerAppId: number;
+	creatorAppId: number;
+	publishedFileId: TSteamPublishedFileId;
+	title: string;
+	description: string;
+	url: string;
+	tags: string;
+	timeAddedToUserList: number;
+	timeCreated: number;
+	timeUpdated: number;
+	votesDown: number;
+	votesUp: number;
+	numChildren: number;
+	totalFilesSize: string;
+}>;
+
+export type TSteamUgcQueryResult = Readonly<{
+	result: number;
+	totalMatchingResults: number;
+	cachedData: boolean;
+	nextCursor: string;
+	items: TSteamUgcDetails[];
+}>;
+
+export type TSteamUgcDownloadResult = Readonly<{
+	result: number;
+	file: TSteamUgcHandle;
+	appId: number;
+	sizeInBytes: number;
+	fileName: string;
+	steamIdOwner: TSteamId;
+	path: string;
+}>;
+
+export type TSteamUgcUnsubscribeResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+}>;
+
+export type TSteamUgcSaveFilesToCloudResult = Readonly<{
+	files: string[];
+}>;
+
+export type TSteamCloudQuota = Readonly<{
+	totalBytes: string;
+	availableBytes: string;
+}>;
+
+export type TSteamCloudFile = Readonly<{
+	name: string;
+	size: number;
+}>;
+
+export type TSteamCloudSaveFilesResult = Readonly<{
+	files: string[];
+}>;
+
+export type TSteamIdNamespace = Readonly<{
+	isAnonymous: (steamId: TSteamId) => boolean;
+	isAnonymousGameServer: (steamId: TSteamId) => boolean;
+	isAnonymousGameServerLogin: (steamId: TSteamId) => boolean;
+	isAnonymousUser: (steamId: TSteamId) => boolean;
+	isChatAccount: (steamId: TSteamId) => boolean;
+	isClanAccount: (steamId: TSteamId) => boolean;
+	isConsoleUserAccount: (steamId: TSteamId) => boolean;
+	isContentServerAccount: (steamId: TSteamId) => boolean;
+	isGameServerAccount: (steamId: TSteamId) => boolean;
+	isIndividualAccount: (steamId: TSteamId) => boolean;
+	isPersistentGameServerAccount: (steamId: TSteamId) => boolean;
+	isLobby: (steamId: TSteamId) => boolean;
+	getAccountId: (steamId: TSteamId) => number;
+	getRawSteamId: (steamId: TSteamId) => TSteamId;
+	getAccountType: (steamId: TSteamId) => number;
+	isValid: (steamId: TSteamId) => boolean;
+	getStaticAccountKey: (steamId: TSteamId) => string;
+	getPersonaName: (steamId: TSteamId) => string;
+	getNickname: (steamId: TSteamId) => string;
+	getRelationship: (steamId: TSteamId) => number;
+	getSteamLevel: (steamId: TSteamId) => number;
+}>;
+
+export type TSteamWorkshopPublishOptions = Readonly<{
+	appId?: number;
+	tags?: string[];
+	visibility?: number;
+	fileType?: number;
+}>;
+
+export type TSteamWorkshopUpdateOptions = Readonly<{
+	tags?: string[];
+	visibility?: number;
+	changeDescription?: string;
+}>;
+
+export type TSteamUgcFileShareResult = Readonly<{
+	result: number;
+	file: TSteamUgcHandle;
+	fileName: string;
+}>;
+
+export type TSteamWorkshopPublishResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	userNeedsToAcceptWorkshopLegalAgreement: boolean;
 }>;
 
 export type TSteamAchievementUnlockTime = Readonly<{
@@ -315,6 +513,29 @@ export type TSteamP2PSendType = TSteamEnum<
 	'Unreliable' | 'UnreliableNoDelay' | 'Reliable' | 'ReliableWithBuffering'
 >;
 
+export type TSteamBeginAuthSessionResult = TSteamEnum<
+	| 'OK'
+	| 'InvalidTicket'
+	| 'DuplicateRequest'
+	| 'InvalidVersion'
+	| 'GameMismatch'
+	| 'ExpiredTicket'
+>;
+
+export type TSteamAuthSessionResponse = TSteamEnum<
+	| 'OK'
+	| 'UserNotConnectedToSteam'
+	| 'NoLicenseOrExpired'
+	| 'VacBanned'
+	| 'LoggedInElsewhere'
+	| 'VacCheckTimedOut'
+	| 'AuthTicketCanceled'
+	| 'AuthTicketInvalidAlreadyUsed'
+	| 'AuthTicketInvalid'
+	| 'PublisherIssuedBan'
+	| 'AuthTicketNetworkIdentityFailure'
+>;
+
 export type TSteamCallbackEvent =
 	| Readonly<{
 			type: 'user-stats-received';
@@ -340,11 +561,101 @@ export type TSteamCallbackEvent =
 			result: number;
 	  }>
 	| Readonly<{
+			type: 'auth-ticket-for-web-api-response';
+			handle: number;
+			result: number;
+			ticketSize: number;
+	  }>
+	| Readonly<{
+			type: 'validate-auth-ticket';
+			steamId: TSteamId;
+			authSessionResponse: number;
+			ownerSteamId: TSteamId;
+	  }>
+	| Readonly<{
 			type: 'game-overlay-activated';
 			active: boolean;
 			userInitiated: boolean;
 			appId: number;
 			overlayPid: number;
+	  }>
+	| Readonly<{
+			type: 'persona-state-change';
+			steamId: TSteamId;
+			changeFlags: number;
+	  }>
+	| Readonly<{
+			type: 'avatar-image-loaded';
+			steamId: TSteamId;
+			image: number;
+			width: number;
+			height: number;
+	  }>
+	| Readonly<{
+			type: 'game-connected-friend-chat-message';
+			steamId: TSteamId;
+			messageId: number;
+	  }>
+	| Readonly<{
+			type: 'rich-presence-join-requested';
+			steamIdFriend: TSteamId;
+			connect: string;
+	  }>
+	| Readonly<{
+			type: 'lobby-created';
+			result: number;
+			lobbyId: TSteamLobbyId;
+	  }>
+	| Readonly<{
+			type: 'lobby-data-update';
+			lobbyId: TSteamLobbyId;
+			steamIdMember: TSteamId;
+			success: boolean;
+	  }>
+	| Readonly<{
+			type: 'lobby-enter';
+			lobbyId: TSteamLobbyId;
+			chatPermissions: number;
+			locked: boolean;
+			response: number;
+	  }>
+	| Readonly<{
+			type: 'lobby-invite';
+			steamIdUser: TSteamId;
+			lobbyId: TSteamLobbyId;
+			gameId: TGameId;
+	  }>
+	| Readonly<{
+			type: 'lobby-join-requested';
+			lobbyId: TSteamLobbyId;
+			steamIdFriend: TSteamId;
+	  }>
+	| Readonly<{
+			type: 'lobby-match-list';
+			lobbiesMatching: number;
+	  }>
+	| Readonly<{
+			type: 'lobby-chat-update';
+			lobbyId: TSteamLobbyId;
+			steamIdUserChanged: TSteamId;
+			steamIdMakingChange: TSteamId;
+			stateChange: number;
+	  }>
+	| Readonly<{
+			type: 'lobby-chat-msg';
+			lobbyId: TSteamLobbyId;
+			steamIdUser: TSteamId;
+			chatEntryType: number;
+			chatId: number;
+	  }>
+	| Readonly<{
+			type: 'p2p-session-request';
+			steamIdRemote: TSteamId;
+	  }>
+	| Readonly<{
+			type: 'p2p-session-connect-fail';
+			steamIdRemote: TSteamId;
+			sessionError: number;
 	  }>
 	| Readonly<{
 			type: 'steam-servers-connected';
@@ -390,7 +701,17 @@ export type TSteamUserNamespace = Readonly<{
 	isLoggedOn: () => boolean;
 	getSteamId: () => TSteamId;
 	getAuthSessionTicket: () => TSteamAuthSessionTicket;
+	getAuthTicketForWebApi: (identity?: string | null) => Promise<TSteamAuthSessionTicket>;
 	cancelAuthTicket: (handle: number) => void;
+	beginAuthSession: (ticket: Buffer, steamId: TSteamId) => number;
+	endAuthSession: (steamId: TSteamId) => void;
+	requestEncryptedAppTicket: (userData: Buffer | string) => Promise<Buffer>;
+	getEncryptedAppTicket: () => Buffer | null;
+	decryptAppTicket: (encryptedTicket: Buffer, key: Buffer) => Buffer | null;
+	isTicketForApp: (decryptedTicket: Buffer, appId: number) => boolean;
+	getTicketIssueTime: (decryptedTicket: Buffer) => number;
+	getTicketSteamId: (decryptedTicket: Buffer) => TSteamId;
+	getTicketAppId: (decryptedTicket: Buffer) => number;
 }>;
 
 export type TSteamUtilsNamespace = Readonly<{
@@ -404,6 +725,14 @@ export type TSteamUtilsNamespace = Readonly<{
 	isOverlayEnabled: () => boolean;
 	isSteamInBigPictureMode: () => boolean;
 	isSteamRunningOnSteamDeck: () => boolean;
+	showFloatingGamepadTextInput: (
+		keyboardMode: number,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+	) => boolean;
+	dismissFloatingGamepadTextInput: () => boolean;
 }>;
 
 export type TSteamAppsNamespace = Readonly<{
@@ -427,6 +756,117 @@ export type TSteamFriendsNamespace = Readonly<{
 	activateGameOverlay: (dialog: string) => void;
 	activateGameOverlayToWebPage: (url: string, mode?: number) => void;
 	activateGameOverlayToStore: (appId: number, flag: number) => void;
+	getFriendCount: (friendFlag: number) => number;
+	getFriends: (friendFlag: number) => TSteamId[];
+	requestUserInformation: (steamId: TSteamId, requireNameOnly: boolean) => boolean;
+	getSmallFriendAvatar: (steamId: TSteamId) => number;
+	getMediumFriendAvatar: (steamId: TSteamId) => number;
+	getLargeFriendAvatar: (steamId: TSteamId) => number;
+	setListenForFriendsMessage: (interceptEnabled: boolean) => boolean;
+	replyToFriendMessage: (steamId: TSteamId, message: string) => boolean;
+	getFriendMessage: (
+		steamId: TSteamId,
+		messageId: number,
+		maximumMessageSize: number,
+	) => TSteamFriendMessage | null;
+	getFriendPersonaName: (steamId: TSteamId) => string;
+	setRichPresence: (key: string, value: string) => boolean;
+	clearRichPresence: () => void;
+	getFriendRichPresence: (steamId: TSteamId, key: string) => string;
+	setPlayedWith: (steamId: TSteamId) => void;
+	getFriendGamePlayed: (steamId: TSteamId) => TSteamFriendGameInfo | null;
+	activateGameOverlayInviteDialog: (steamIdLobby: TSteamLobbyId) => void;
+	activateGameOverlayToUser: (dialog: string, steamId: TSteamId) => void;
+}>;
+
+export type TSteamCloudNamespace = Readonly<{
+	saveTextToFile: (fileName: string, content: string) => boolean;
+	readTextFromFile: (fileName: string) => string | null;
+	deleteFile: (fileName: string) => boolean;
+	saveFilesToCloud: (filePaths: string[]) => TSteamCloudSaveFilesResult;
+	isEnabledForUser: () => boolean;
+	isEnabled: () => boolean;
+	setEnabled: (enabled: boolean) => void;
+	getQuota: () => TSteamCloudQuota | null;
+	getFileCount: () => number;
+	getFileNameAndSize: (index: number) => TSteamCloudFile | null;
+}>;
+
+export type TSteamMatchmakingNamespace = Readonly<{
+	createLobby: (lobbyType: number, maxMembers: number) => Promise<TSteamLobbyCreated>;
+	deleteLobbyData: (lobbyId: TSteamLobbyId, key: string) => boolean;
+	getLobbyByIndex: (index: number) => TSteamLobbyId | null;
+	getLobbyData: (lobbyId: TSteamLobbyId, key: string) => string;
+	getLobbyMemberByIndex: (lobbyId: TSteamLobbyId, index: number) => TSteamId | null;
+	getNumLobbyMembers: (lobbyId: TSteamLobbyId) => number;
+	getLobbyOwner: (lobbyId: TSteamLobbyId) => TSteamId | null;
+	inviteUserToLobby: (lobbyId: TSteamLobbyId, inviteeId: TSteamId) => boolean;
+	joinLobby: (lobbyId: TSteamLobbyId) => Promise<TSteamLobbyEnter>;
+	leaveLobby: (lobbyId: TSteamLobbyId) => void;
+	setLobbyData: (lobbyId: TSteamLobbyId, key: string, value: string) => boolean;
+	setLobbyJoinable: (lobbyId: TSteamLobbyId, joinable: boolean) => boolean;
+	setLobbyOwner: (lobbyId: TSteamLobbyId, ownerId: TSteamId) => boolean;
+	setLobbyType: (lobbyId: TSteamLobbyId, lobbyType: number) => boolean;
+	requestLobbyList: () => Promise<TSteamLobbyMatchList>;
+	getLobbyMemberLimit: (lobbyId: TSteamLobbyId) => number;
+	setLobbyMemberLimit: (lobbyId: TSteamLobbyId, limit: number) => boolean;
+	getLobbyMemberData: (lobbyId: TSteamLobbyId, memberId: TSteamId, key: string) => string;
+	setLobbyMemberData: (lobbyId: TSteamLobbyId, key: string, value: string) => void;
+	getLobbyDataCount: (lobbyId: TSteamLobbyId) => number;
+	getLobbyDataByIndex: (lobbyId: TSteamLobbyId, index: number) => TSteamLobbyData | null;
+	sendLobbyChatMsg: (lobbyId: TSteamLobbyId, data: Buffer) => boolean;
+	getLobbyChatEntry: (
+		lobbyId: TSteamLobbyId,
+		chatId: number,
+		maximumMessageSize?: number,
+	) => TSteamLobbyChatEntry | null;
+}>;
+
+export type TSteamNetworkingNamespace = Readonly<{
+	sendP2PPacket: (steamId: TSteamId, sendType: number, data: Buffer, channel?: number) => boolean;
+	isP2PPacketAvailable: (channel?: number) => number;
+	readP2PPacket: (size: number, channel?: number) => TSteamP2PPacket | null;
+	acceptP2PSessionWithUser: (steamId: TSteamId) => boolean;
+	getP2PSessionState: (steamId: TSteamId) => TSteamP2PSessionState;
+	closeP2PSessionWithUser: (steamId: TSteamId) => boolean;
+	closeP2PChannelWithUser: (steamId: TSteamId, channel: number) => boolean;
+	isBehindNat: () => boolean;
+}>;
+
+export type TSteamNativeUgcNamespace = Readonly<{
+	showOverlay: (publishedFileId?: TSteamPublishedFileId) => void;
+	getItems: (
+		options: TSteamUgcQueryOptions | null | undefined,
+		matchingType: number,
+		queryType: number,
+	) => Promise<TSteamUgcQueryResult>;
+	getUserItems: (
+		options: TSteamUgcQueryOptions | null | undefined,
+		matchingType: number,
+		sortOrder: number,
+		list: number,
+	) => Promise<TSteamUgcQueryResult>;
+	downloadItem: (file: TSteamUgcHandle, downloadDir: string) => Promise<TSteamUgcDownloadResult>;
+	unsubscribe: (publishedFileId: TSteamPublishedFileId) => Promise<TSteamUgcUnsubscribeResult>;
+	saveFilesToCloud: (filePaths: string[]) => TSteamUgcSaveFilesToCloudResult;
+	fileShare: (filePath: string) => Promise<TSteamUgcFileShareResult>;
+	publishWorkshopFile: (
+		options: TSteamWorkshopPublishOptions | null | undefined,
+		filePath: string,
+		previewFilePath: string,
+		title: string,
+		description: string,
+	) => Promise<TSteamWorkshopPublishResult>;
+	updatePublishedWorkshopFile: (
+		options: TSteamWorkshopUpdateOptions | null | undefined,
+		publishedFileId: TSteamPublishedFileId,
+		filePath: string,
+		previewFilePath: string,
+		title: string,
+		description: string,
+	) => Promise<TSteamWorkshopPublishResult>;
+	getItemState: (publishedFileId: TSteamPublishedFileId) => number;
+	getItemInstallInfo: (publishedFileId: TSteamPublishedFileId) => TSteamUgcItemInstallInfo | null;
 }>;
 
 export type TSteamUserStatsNamespace = Readonly<{
@@ -450,6 +890,7 @@ export type TSteamUserStatsNamespace = Readonly<{
 	getAchievementName: (index: number) => string | null;
 	getAchievementDisplayAttribute: (name: string, key: string) => string | null;
 	getAchievementAndUnlockTime: (name: string) => TSteamAchievementUnlockTime | null;
+	getNumberOfCurrentPlayers: () => Promise<number>;
 }>;
 
 type TNativeConstantName =
@@ -463,15 +904,21 @@ type TNativeConstantName =
 	| 'k_EUniversePublic'
 	| 'k_EUniverseBeta'
 	| 'k_EUniverseInternal'
-	| 'k_EUniverseDev';
+	| 'k_EUniverseDev'
+	| 'EncryptedAppTicketSymmetricKeyLength';
 
 type TNativeNamespaces = Readonly<{
 	steam: TSteamNamespace;
 	callbacks: TSteamCallbacksNamespace;
+	steamId: TSteamIdNamespace;
 	user: TSteamUserNamespace;
 	utils: TSteamUtilsNamespace;
 	apps: TSteamAppsNamespace;
 	friends: TSteamFriendsNamespace;
+	matchmaking: TSteamMatchmakingNamespace;
+	networking: TSteamNetworkingNamespace;
+	cloud: TSteamCloudNamespace;
+	ugc: TSteamNativeUgcNamespace;
 	userStats: TSteamUserStatsNamespace;
 }>;
 
@@ -493,6 +940,8 @@ type TNativeEnums = Readonly<{
 	UGCItemState: TSteamUgcItemState;
 	FloatingGamepadTextInputMode: TSteamFloatingGamepadTextInputMode;
 	P2PSendType: TSteamP2PSendType;
+	BeginAuthSessionResult: TSteamBeginAuthSessionResult;
+	AuthSessionResponse: TSteamAuthSessionResponse;
 }>;
 
 export type TNative = TNativeNamespaces &

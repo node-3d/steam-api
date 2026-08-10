@@ -4,13 +4,18 @@ import { getBin } from '@node-3d/addon-tools';
 import { getPlatformRedist, PACKAGE_ROOT } from './paths.ts';
 
 const copySteamRuntime = async (): Promise<void> => {
-	const { dir, files } = getPlatformRedist();
+	const { dir, files, extraFiles } = getPlatformRedist();
 	const binDir = path.join(PACKAGE_ROOT, getBin());
 
 	await fs.mkdir(binDir, { recursive: true });
 
 	await Promise.all(
 		files.map((file) => fs.copyFile(path.join(dir, file), path.join(binDir, file))),
+	);
+	await Promise.all(
+		(extraFiles ?? []).map(({ dir, file }) =>
+			fs.copyFile(path.join(dir, file), path.join(binDir, file)),
+		),
 	);
 };
 

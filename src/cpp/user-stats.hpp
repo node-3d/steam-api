@@ -19,6 +19,10 @@ JS_METHOD(getAchievementNames);
 JS_METHOD(getAchievementName);
 JS_METHOD(getAchievementDisplayAttribute);
 JS_METHOD(getAchievementAndUnlockTime);
+JS_METHOD(getNumberOfCurrentPlayers);
+
+void rejectPendingPromises(const std::string &message);
+void clearPendingPromises();
 
 Napi::Object createNamespace(Napi::Env env);
 } // namespace steam_api::user_stats

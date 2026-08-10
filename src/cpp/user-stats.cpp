@@ -1,5 +1,7 @@
 #include "user-stats.hpp"
 
+#include "call-result.hpp"
+
 #include <cmath>
 #include <limits>
 
@@ -11,6 +13,34 @@ ISteamUserStats *steamUserStats(Napi::Env env) {
 	}
 	return value;
 }
+
+namespace {
+class NumberOfCurrentPlayersRequest
+    : public PendingCallResultRequest<NumberOfCurrentPlayersRequest, NumberOfCurrentPlayers_t> {
+  public:
+	explicit NumberOfCurrentPlayersRequest(Napi::Env env) : PendingCallResultRequest(env) {}
+
+	void onCompleted(NumberOfCurrentPlayers_t *param, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Error on getting current players: Steam API IO failure.").Value()
+			);
+			return;
+		}
+		if (param->m_bSuccess == 0) {
+			deferred().Reject(Napi::Error::New(env(), "Error on getting current players.").Value());
+			return;
+		}
+
+		deferred().Resolve(Napi::Number::New(env(), param->m_cPlayers));
+	}
+};
+
+std::vector<std::unique_ptr<NumberOfCurrentPlayersRequest>> numberOfCurrentPlayersRequests;
+} // namespace
 
 JS_METHOD(getStatInt) {
 	NAPI_ENV;
@@ -242,6 +272,25 @@ JS_METHOD(getAchievementAndUnlockTime) {
 	RET_VALUE(result);
 }
 
+JS_METHOD(getNumberOfCurrentPlayers) {
+	NAPI_ENV;
+	ISteamUserStats *value = steamUserStats(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = value->GetNumberOfCurrentPlayers();
+	RET_VALUE(trackCallResult<NumberOfCurrentPlayersRequest>(env, call, numberOfCurrentPlayersRequests));
+}
+
+void rejectPendingPromises(const std::string &message) {
+	rejectPendingCallResults(numberOfCurrentPlayersRequests, message);
+}
+
+void clearPendingPromises() {
+	clearPendingCallResults(numberOfCurrentPlayersRequests);
+}
+
 Napi::Object createNamespace(Napi::Env env) {
 	Napi::Object value = JS_OBJECT;
 	value.Set("getStatInt", Napi::Function::New(env, getStatInt));
@@ -260,6 +309,7 @@ Napi::Object createNamespace(Napi::Env env) {
 	value.Set("getAchievementName", Napi::Function::New(env, getAchievementName));
 	value.Set("getAchievementDisplayAttribute", Napi::Function::New(env, getAchievementDisplayAttribute));
 	value.Set("getAchievementAndUnlockTime", Napi::Function::New(env, getAchievementAndUnlockTime));
+	value.Set("getNumberOfCurrentPlayers", Napi::Function::New(env, getNumberOfCurrentPlayers));
 	return value;
 }
 } // namespace steam_api::user_stats
