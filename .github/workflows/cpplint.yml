@@ -1,4 +1,4 @@
-name: Lint
+name: Cpplint
 defaults:
   run:
     shell: bash
@@ -12,8 +12,8 @@ on:
       - master
 
 jobs:
-  lint:
-    name: Lint
+  cpplint:
+    name: Cpplint
     runs-on: ubuntu-22.04
 
     steps:
@@ -32,10 +32,10 @@ jobs:
       - name: Install Modules
         run: npm ci --ignore-scripts
 
-      - name: Run Format Check
-        run: |
-          npm run format:ts:ci
-          npm run format:src:ci
+      - name: Install Cpplint
+        run: pip install cpplint
 
-      - name: Run Lint
-        run: npm run lint:all
+      - name: Run Cpplint
+        run: |
+          node -e "import('@node-3d/addon-tools').then((m) => m.cpcpplint())"
+          cpplint --filter=-build/c++17 --recursive ./src/cpp

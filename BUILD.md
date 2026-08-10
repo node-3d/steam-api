@@ -39,3 +39,18 @@ For local maintainer builds, place the archive at:
 ```
 
 `npm run sdk:ensure` unpacks that archive into `.sdk/sdk`.
+
+CI caches `.sdk` by `STEAM_SDK_GZ_SHA`. Updating the private Steamworks SDK
+archive requires updating the hash secret so GitHub Actions invalidates the old
+cache and rehydrates the SDK from `STEAM_SDK_GZ_LINK`.
+
+The native release build matrix follows the standard Node3D addon targets
+supported by the Steamworks SDK inputs: Windows x64, Linux x64, Linux ARM64,
+macOS x64, and macOS ARM64. Windows ARM64 is intentionally omitted until the SDK
+provides matching Windows ARM64 import and runtime libraries.
+
+The test workflow also runs a `windows-x64-on-arm` lane on GitHub's
+`windows-11-arm` runner with x64 Node.js. That mirrors the expected Windows ARM
+Steam usage path: Steam and the addon run as x64 Windows binaries under Windows
+on ARM emulation. This lane validates the normal Windows x64 package artifact on
+an ARM host; it does not produce a separate Windows ARM64 release binary.

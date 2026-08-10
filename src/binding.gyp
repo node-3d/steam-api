@@ -29,7 +29,14 @@
 				'<(steam_include)',
 			],
 			'conditions': [
-				['OS=="linux"', {
+				['OS=="linux" and target_arch=="arm64"', {
+					'libraries': [
+						"-Wl,-rpath,'$$ORIGIN'",
+						'<(steam_redist)/linuxarm64/libsteam_api.so',
+						'<(steam_include)/steam/lib/linuxarm64/libsdkencryptedappticket.so',
+					],
+				}],
+				['OS=="linux" and target_arch!="arm64"', {
 					'libraries': [
 						"-Wl,-rpath,'$$ORIGIN'",
 						'<(steam_redist)/linux64/libsteam_api.so',

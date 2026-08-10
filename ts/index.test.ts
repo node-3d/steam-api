@@ -1,9 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { getBin } from '@node-3d/addon-tools';
+
+const nativeBinaryPath = join(import.meta.dirname, '..', getBin(), 'steam-api.node');
 
 test(
 	'native addon contract is loadable when a prebuilt binary is present',
-	{ skip: true },
+	{ skip: existsSync(nativeBinaryPath) ? false : 'native binary is not built' },
 	async () => {
 		const steamApi = await import('./index.ts');
 		assert.equal(typeof steamApi.steam.initEx, 'function');

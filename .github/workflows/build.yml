@@ -11,6 +11,11 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
 jobs:
   create_release:
     name: Create Release
@@ -30,6 +35,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24.13.0
+          cache: 'npm'
 
       - name: Get Package Version
         id: package-version
@@ -50,11 +56,32 @@ jobs:
           name: Release ${{ steps.package-version.outputs.version }}
 
   build:
-    name: Build
+    name: Build (${{ matrix.target }})
     needs: create_release
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-26]
+        include:
+          - target: windows-x64
+            os: windows-2022
+            node_arch: x64
+            archflags: ''
+          - target: linux-x64
+            os: ubuntu-22.04
+            node_arch: x64
+            archflags: ''
+          - target: linux-arm64
+            os: ubuntu-22.04-arm
+            node_arch: arm64
+            archflags: ''
+          - target: darwin-x64
+            os: macos-26
+            node_arch: x64
+            archflags: '-arch x86_64'
+          - target: darwin-arm64
+            os: macos-26
+            node_arch: arm64
+            archflags: '-arch arm64'
 
     runs-on: ${{ matrix.os }}
 
@@ -69,13 +96,29 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24.13.0
+          architecture: ${{ matrix.node_arch }}
+          cache: 'npm'
+
+      - name: Print Native Target
+        run: |
+          echo "runner=$(uname -s)-$(uname -m)"
+          node -p "'node=' + process.version + ' platform=' + process.platform + ' arch=' + process.arch"
+          npm config get arch
+
+      - name: Cache Steamworks SDK
+        uses: actions/cache@v4
+        with:
+          path: .sdk
+          key: steamworks-sdk-${{ secrets.STEAM_SDK_GZ_SHA }}
 
       - name: Install Modules
-        run: npm install --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Build Current Binary
         run: npm run build:rebuild
         env:
+          npm_config_arch: ${{ matrix.node_arch }}
+          ARCHFLAGS: ${{ matrix.archflags }}
           STEAM_SDK_GZ_LINK: ${{ secrets.STEAM_SDK_GZ_LINK }}
           STEAM_SDK_GZ_SHA: ${{ secrets.STEAM_SDK_GZ_SHA }}
 
@@ -91,6 +134,11 @@ jobs:
       - name: Pack Files
         id: pack-files
         run: node -e "import('@node-3d/addon-tools').then((m) => m.actionPack())" >> $GITHUB_OUTPUT
+
+      - name: Attest Binary
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.pack-files.outputs.pack }}
 
       - name: Store Binaries
         uses: softprops/action-gh-release@v3
