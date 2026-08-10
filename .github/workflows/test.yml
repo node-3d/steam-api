@@ -75,6 +75,11 @@ jobs:
       - name: Install Modules
         run: npm ci --ignore-scripts
 
+      - name: Install Segfault Binary
+        run: |
+          cd node_modules/@node-3d/segfault
+          node -e "import('@node-3d/addon-tools').then((m) => m.install('https://github.com/node-3d/segfault/releases/download/4.0.0')).then((ok) => { if (!ok) process.exit(1); })"
+
       - name: Build Current Binary
         run: npm run build:rebuild
         env:
