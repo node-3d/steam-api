@@ -106,7 +106,7 @@ jobs:
           npm config get arch
 
       - name: Cache Steamworks SDK
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .sdk
           key: steamworks-sdk-${{ secrets.STEAM_SDK_GZ_SHA }}
