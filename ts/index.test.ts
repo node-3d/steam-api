@@ -3,14 +3,17 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getBin } from '@node-3d/addon-tools';
+import type { TSteamId } from './index.ts';
 
 const nativeBinaryPath = join(import.meta.dirname, '..', getBin(), 'steam-api.node');
+const nativeSkip = existsSync(nativeBinaryPath) ? false : 'native binary is not built';
+const loadSteamApi = () => import('./index.ts');
 
 test(
 	'native addon contract is loadable when a prebuilt binary is present',
-	{ skip: existsSync(nativeBinaryPath) ? false : 'native binary is not built' },
+	{ skip: nativeSkip },
 	async () => {
-		const steamApi = await import('./index.ts');
+		const steamApi = await loadSteamApi();
 		assert.equal(typeof steamApi.steam.initEx, 'function');
 		assert.equal(typeof steamApi.callbacks.pollCallbacks, 'function');
 		assert.equal(typeof steamApi.steamId.isAnonymous, 'function');
@@ -126,3 +129,66 @@ test(
 		assert.equal(typeof steamApi.userStats.getNumberOfCurrentPlayers, 'function');
 	},
 );
+
+test('Steam lifecycle methods are safe without a Steam session', { skip: nativeSkip }, async () => {
+	const steamApi = await loadSteamApi();
+
+	assert.equal(typeof steamApi.steam.isSteamRunning(), 'boolean');
+	assert.deepEqual(steamApi.callbacks.pollCallbacks(), []);
+	assert.doesNotThrow(() => steamApi.steam.releaseCurrentThreadMemory());
+
+	const result = steamApi.steam.initEx();
+	try {
+		assert.equal(typeof result.result, 'number');
+		assert.equal(typeof result.ok, 'boolean');
+		assert.equal(typeof result.errorMessage, 'string');
+		assert.doesNotThrow(() => steamApi.steam.runCallbacks());
+		assert.ok(Array.isArray(steamApi.callbacks.pollCallbacks()));
+	} finally {
+		assert.doesNotThrow(() => steamApi.steam.shutdown());
+	}
+});
+
+test('SteamID helpers operate without a Steam session', { skip: nativeSkip }, async () => {
+	const steamApi = await loadSteamApi();
+	const individualSteamId = '76561197960287930' as TSteamId;
+	const nilSteamId = '0' as TSteamId;
+
+	assert.equal(steamApi.steamId.isValid(individualSteamId), true);
+	assert.equal(steamApi.steamId.getRawSteamId(individualSteamId), individualSteamId);
+	assert.equal(steamApi.steamId.getAccountId(individualSteamId), 22202);
+	assert.equal(
+		steamApi.steamId.getAccountType(individualSteamId),
+		steamApi.AccountType.Individual,
+	);
+	assert.equal(steamApi.steamId.getStaticAccountKey(individualSteamId), '76561193665320634');
+	assert.equal(steamApi.steamId.isIndividualAccount(individualSteamId), true);
+	assert.equal(steamApi.steamId.isAnonymous(individualSteamId), false);
+	assert.equal(steamApi.steamId.isLobby(individualSteamId), false);
+
+	assert.equal(steamApi.steamId.isValid(nilSteamId), false);
+	assert.equal(steamApi.steamId.getRawSteamId(nilSteamId), nilSteamId);
+	assert.equal(steamApi.steamId.getAccountId(nilSteamId), 0);
+	assert.equal(steamApi.steamId.getAccountType(nilSteamId), steamApi.AccountType.Invalid);
+	assert.equal(steamApi.steamId.getStaticAccountKey(nilSteamId), '0');
+	assert.equal(steamApi.steamId.isIndividualAccount(nilSteamId), false);
+	assert.equal(steamApi.steamId.isAnonymous(nilSteamId), false);
+	assert.equal(steamApi.steamId.isLobby(nilSteamId), false);
+});
+
+test('SteamID helpers validate uint64 decimal strings', { skip: nativeSkip }, async () => {
+	const steamApi = await loadSteamApi();
+
+	assert.throws(
+		() => steamApi.steamId.isValid('' as TSteamId),
+		/steamId must be a non-empty uint64 decimal string/u,
+	);
+	assert.throws(
+		() => steamApi.steamId.isValid('not-a-steamid' as TSteamId),
+		/steamId must be a uint64 decimal string/u,
+	);
+	assert.throws(
+		() => steamApi.steamId.isValid('18446744073709551616' as TSteamId),
+		/steamId is outside the uint64 range/u,
+	);
+});
