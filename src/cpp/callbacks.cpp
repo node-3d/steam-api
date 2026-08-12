@@ -133,6 +133,7 @@ class CallbackBridge {
 		_floatingGamepadTextInputDismissed.Register(
 		    this, &CallbackBridge::onFloatingGamepadTextInputDismissed
 		);
+		_downloadItemResult.Register(this, &CallbackBridge::onDownloadItemResult);
 		_isRegistered = true;
 	}
 
@@ -169,6 +170,7 @@ class CallbackBridge {
 		_dlcInstalled.Unregister();
 		_newUrlLaunchParameters.Unregister();
 		_floatingGamepadTextInputDismissed.Unregister();
+		_downloadItemResult.Unregister();
 		_isRegistered = false;
 		_events.clear();
 	}
@@ -407,6 +409,14 @@ class CallbackBridge {
 		_events.push_back(makeEventData("floating-gamepad-text-input-dismissed"));
 	}
 
+	void onDownloadItemResult(DownloadItemResult_t *param) {
+		Event event = makeEventData("download-item-result");
+		event.fields.push_back(makeUint32Field("appId", param->m_unAppID));
+		event.fields.push_back(makeUint64StringField("publishedFileId", param->m_nPublishedFileId));
+		event.fields.push_back(makeInt32Field("result", static_cast<int32_t>(param->m_eResult)));
+		_events.push_back(event);
+	}
+
 	bool _isRegistered = false;
 	std::vector<Event> _events;
 	CCallbackManual<CallbackBridge, UserStatsReceived_t> _userStatsReceived;
@@ -437,6 +447,7 @@ class CallbackBridge {
 	CCallbackManual<CallbackBridge, DlcInstalled_t> _dlcInstalled;
 	CCallbackManual<CallbackBridge, NewUrlLaunchParameters_t> _newUrlLaunchParameters;
 	CCallbackManual<CallbackBridge, FloatingGamepadTextInputDismissed_t> _floatingGamepadTextInputDismissed;
+	CCallbackManual<CallbackBridge, DownloadItemResult_t> _downloadItemResult;
 };
 
 std::unique_ptr<CallbackBridge> callbackBridge;

@@ -232,7 +232,7 @@ Implemented event mappings:
 | `greenworks.ugcPublishUpdate(publishedFileId, filePath, title, description, imagePath, success, error, progress)` | `ugc.publishUpdate(publishedFileId, filePath, title, description, imagePath, options)` |
 | `greenworks.ugcGetItems([options,] matchingType, queryType, success, error)` | `ugc.getItems(options, matchingType, queryType)` |
 | `greenworks.ugcGetUserItems([options,] matchingType, sortOrder, list, success, error)` | `ugc.getUserItems(options, matchingType, sortOrder, list)` |
-| `greenworks.ugcDownloadItem(file, downloadDir, success, error)` | `ugc.downloadItem(file, downloadDir)` |
+| `greenworks.ugcDownloadItem(file, downloadDir, success, error)` | `ugc.download(file, downloadDir)` |
 | `greenworks.ugcSynchronizeItems([options,] syncDir, success, error)` | `ugc.synchronizeItems(options, syncDir)` |
 | `greenworks.ugcUnsubscribe(publishedFileId, success, error)` | `ugc.unsubscribe(publishedFileId)` |
 | `greenworks.ugcShowOverlay([publishedFileId])` | `ugc.showOverlay(publishedFileId?)` |
@@ -241,14 +241,14 @@ Implemented event mappings:
 
 ## Enum Mappings
 
-Greenworks enum objects are available as top-level Node3D exports with the same
-object names:
+Greenworks-compatible enum objects are available as top-level Node3D exports,
+and Node3D also exposes Steamworks-oriented enums for newer APIs:
 
 ```ts
 import { FriendFlags, LobbyType, Result } from '@node-3d/steam-api';
 ```
 
-Available enum objects:
+Available enum objects include:
 
 - `FriendFlags`
 - `FriendRelationship`
@@ -265,6 +265,10 @@ Available enum objects:
 - `UserUGCList`
 - `UserUGCListSortOrder`
 - `UGCItemState`
+- `ItemUpdateStatus`
+- `ItemPreviewType`
+- `RemoteStoragePublishedFileVisibility`
+- `WorkshopFileType`
 - `FloatingGamepadTextInputMode`
 - `P2PSendType`
 
@@ -346,7 +350,17 @@ async function waitForSteamCall<T>(promise: Promise<T>): Promise<T> {
 
 const query = waitForSteamCall(
 	ugc.getItems(
-		{ appId, page: 1 },
+		{
+			appId,
+			page: 1,
+			requiredTags: ['level'],
+			requiredTagGroups: [['challenge', 'puzzle']],
+			excludedTags: ['spoiler'],
+			returnMetadata: true,
+			returnAdditionalPreviews: true,
+			returnChildren: true,
+			returnKeyValueTags: true,
+		},
 		UGCMatchingType.Items,
 		UGCQueryType.RankedByPublicationDate,
 	),
@@ -357,7 +371,7 @@ const info = ugc.getItemInstallInfo(publishedFileId);
 ugc.showOverlay();
 ugc.showOverlay(publishedFileId);
 
-await waitForSteamCall(ugc.downloadItem((await query).items[0].file, './workshop'));
+await waitForSteamCall(ugc.download((await query).items[0].file, './workshop'));
 await waitForSteamCall(ugc.unsubscribe(publishedFileId));
 
 const share = await waitForSteamCall(ugc.fileShare('item.dat'));
@@ -372,10 +386,94 @@ const publish = await waitForSteamCall(
 const sync = await waitForSteamCall(ugc.synchronizeItems({ appId, page: 1 }, './workshop'));
 ```
 
+Node3D also exposes modern `ISteamUGC` item creation, update, subscription, and
+download methods, plus vote and favorite interactions, that Greenworks' legacy
+workshop helpers do not expose directly:
+
+```ts
+import {
+	ItemUpdateStatus,
+	RemoteStoragePublishedFileVisibility,
+	WorkshopFileType,
+	ugc,
+	update,
+	utils,
+} from '@node-3d/steam-api';
+
+const created = await waitForSteamCall(ugc.createItem(utils.getAppId(), WorkshopFileType.Community));
+const updateHandle = ugc.startItemUpdate(utils.getAppId(), created.publishedFileId);
+
+ugc.setItemTitle(updateHandle, 'Workshop Item');
+ugc.setItemDescription(updateHandle, 'Description');
+ugc.setItemMetadata(updateHandle, JSON.stringify({ version: 1 }));
+ugc.setItemVisibility(updateHandle, RemoteStoragePublishedFileVisibility.Public);
+ugc.setItemTags(updateHandle, ['level']);
+ugc.setItemContent(updateHandle, './workshop-content');
+ugc.setItemPreview(updateHandle, './preview.png');
+
+const submitPromise = ugc.submitItemUpdate(updateHandle, 'Initial upload');
+let submitted = false;
+submitPromise.then(
+	() => {
+		submitted = true;
+	},
+	() => {
+		submitted = true;
+	},
+);
+
+while (!submitted) {
+	const progress = ugc.getItemUpdateProgress(updateHandle);
+	if (progress.status !== ItemUpdateStatus.Invalid) {
+		console.log(progress.bytesProcessed, progress.bytesTotal);
+	}
+	update();
+	await new Promise((resolve) => setTimeout(resolve, 16));
+}
+
+await submitPromise;
+
+await waitForSteamCall(ugc.subscribeItem(created.publishedFileId));
+await waitForSteamCall(ugc.setUserItemVote(created.publishedFileId, true));
+console.log(await waitForSteamCall(ugc.getUserItemVote(created.publishedFileId)));
+await waitForSteamCall(ugc.addItemToFavorites(created.publishedFileId));
+await waitForSteamCall(ugc.removeItemFromFavorites(created.publishedFileId));
+console.log(ugc.getSubscribedItems());
+
+if (ugc.downloadItem(created.publishedFileId, true)) {
+	let downloaded = false;
+	while (!downloaded) {
+		for (const event of update()) {
+			if (
+				event.type === 'download-item-result' &&
+				event.publishedFileId === created.publishedFileId
+			) {
+				downloaded = true;
+				console.log(event.result);
+			}
+		}
+		await new Promise((resolve) => setTimeout(resolve, 16));
+	}
+}
+
+await waitForSteamCall(ugc.unsubscribeItem(created.publishedFileId));
+```
+
+`ItemUpdateStatus.Invalid` means Steam is not reporting active progress for the
+handle. During an active submit, Steam reports preparing/uploading/committing
+states plus byte counters.
+
+Node3D query options use camelCase names and map to Steam's `ISteamUGC` query
+setter methods. Greenworks-compatible `app_id` and `page_num` aliases are still
+accepted for `appId` and `page`; newer options such as `requiredTagGroups`,
+`returnMetadata`, and `allowCachedResponseMaxAgeSeconds` use Node3D names.
+
 Node3D UGC detail objects use `steamIdOwner`, `consumerAppId`, `creatorAppId`,
 and `url` instead of Greenworks' `steamIDOwner`, `consumerAppID`,
-`creatorAppID`, and `URL`. `downloadItem()` resolves with the saved local
-`path` instead of calling a success callback with no arguments. `saveFilesToCloud()`
+`creatorAppID`, and `URL`. `download()` resolves with the saved local
+`path` instead of calling a success callback with no arguments. `downloadItem()`
+maps to the modern `ISteamUGC::DownloadItem` method and reports completion with
+the `download-item-result` callback event. `saveFilesToCloud()`
 returns the Steam Cloud filenames written from local paths. `fileShare()`
 resolves with `{ file }`, and `publishWorkshopFile()` /
 `updatePublishedWorkshopFile()` resolve with `{ publishedFileId }` plus Steam's

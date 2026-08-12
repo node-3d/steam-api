@@ -40,8 +40,10 @@ for (const event of update()) {
 
 ## API Surface
 
-Migrating from Greenworks? See [GREENWORKS.md](GREENWORKS.md) for capability
-mappings and migration notes.
+Migrating from Greenworks? See [docs/GREENWORKS.md](docs/GREENWORKS.md) for
+capability mappings and migration notes.
+
+Development coverage is tracked in [docs/CHECKLIST.md](docs/CHECKLIST.md).
 
 The initial binding covers lifecycle, callback pumping, app/user/friends
 helpers, matchmaking lobbies, P2P packet networking, auth tickets, DLC metadata,
@@ -228,7 +230,28 @@ call results, so keep pumping callbacks with `steam.runCallbacks()` or
 - `ugc.showOverlay(publishedFileId?)`
 - `ugc.getItems(options, matchingType, queryType)`
 - `ugc.getUserItems(options, matchingType, sortOrder, list)`
-- `ugc.downloadItem(file, downloadDir)`
+- `ugc.createItem(appId?, fileType?)`
+- `ugc.startItemUpdate(appId, publishedFileId)`
+- `ugc.setItemTitle(updateHandle, title)`
+- `ugc.setItemDescription(updateHandle, description)`
+- `ugc.setItemMetadata(updateHandle, metadata)`
+- `ugc.setItemVisibility(updateHandle, visibility)`
+- `ugc.setItemTags(updateHandle, tags, allowAdminTags?)`
+- `ugc.setItemContent(updateHandle, contentFolder)`
+- `ugc.setItemPreview(updateHandle, previewFile)`
+- `ugc.submitItemUpdate(updateHandle, changeNote?)`
+- `ugc.getItemUpdateProgress(updateHandle)`
+- `ugc.setUserItemVote(publishedFileId, voteUp)`
+- `ugc.getUserItemVote(publishedFileId)`
+- `ugc.addItemToFavorites(publishedFileId, appId?)`
+- `ugc.removeItemFromFavorites(publishedFileId, appId?)`
+- `ugc.subscribeItem(publishedFileId)`
+- `ugc.unsubscribeItem(publishedFileId)`
+- `ugc.getNumSubscribedItems(includeLocallyDisabled?)`
+- `ugc.getSubscribedItems(maxEntries?, includeLocallyDisabled?)`
+- `ugc.getItemDownloadInfo(publishedFileId)`
+- `ugc.downloadItem(publishedFileId, highPriority?)`
+- `ugc.download(file, downloadDir)`
 - `ugc.unsubscribe(publishedFileId)`
 - `ugc.saveFilesToCloud(filePaths)`
 - `ugc.fileShare(filePath)`
@@ -241,10 +264,25 @@ call results, so keep pumping callbacks with `steam.runCallbacks()` or
 - `ugc.getItemInstallInfo(publishedFileId)`
 
 UGC promises resolve from Steam call results. Continue pumping callbacks with
-`steam.runCallbacks()` or `update()` while a UGC promise is pending:
+`steam.runCallbacks()` or `update()` while a UGC promise is pending.
+`downloadItem()` maps to `ISteamUGC::DownloadItem`, returns `boolean`, and
+reports completion through the `download-item-result` callback event:
+
+`getItems()` and `getUserItems()` query options map to Steam's query setter
+methods. `requiredTags`, `requiredTagGroups`, `excludedTags`, return toggles,
+`language`, and `allowCachedResponseMaxAgeSeconds` are applied before
+`SendQueryUGCRequest()`. `matchAnyTag` is only valid for `getItems()`.
 
 ```ts
-import { UGCMatchingType, UGCQueryType, ugc, update } from '@node-3d/steam-api';
+import {
+	RemoteStoragePublishedFileVisibility,
+	UGCMatchingType,
+	UGCQueryType,
+	WorkshopFileType,
+	ugc,
+	update,
+	utils,
+} from '@node-3d/steam-api';
 
 async function waitForSteamCall<T>(promise: Promise<T>): Promise<T> {
 	let settled = false;
@@ -267,7 +305,19 @@ async function waitForSteamCall<T>(promise: Promise<T>): Promise<T> {
 
 const queryResult = await waitForSteamCall(
 	ugc.getItems(
-		{ page: 1 },
+		{
+			page: 1,
+			requiredTags: ['level'],
+			requiredTagGroups: [['challenge', 'puzzle']],
+			excludedTags: ['spoiler'],
+			matchAnyTag: false,
+			returnMetadata: true,
+			returnAdditionalPreviews: true,
+			returnChildren: true,
+			returnKeyValueTags: true,
+			language: 'english',
+			allowCachedResponseMaxAgeSeconds: 60,
+		},
 		UGCMatchingType.Items,
 		UGCQueryType.RankedByPublicationDate,
 	),
@@ -276,10 +326,52 @@ if (queryResult.items.length === 0) {
 	throw new Error('UGC query returned no items');
 }
 
-const download = await waitForSteamCall(
-	ugc.downloadItem(queryResult.items[0].file, './workshop'),
-);
+const download = await waitForSteamCall(ugc.download(queryResult.items[0].file, './workshop'));
 console.log(download.path);
+console.log(queryResult.items[0].metadata);
+console.log(queryResult.items[0].additionalPreviews);
+
+const publishedFileId = queryResult.items[0].publishedFileId;
+await waitForSteamCall(ugc.subscribeItem(publishedFileId));
+
+await waitForSteamCall(ugc.setUserItemVote(publishedFileId, true));
+console.log(await waitForSteamCall(ugc.getUserItemVote(publishedFileId)));
+await waitForSteamCall(ugc.addItemToFavorites(publishedFileId));
+await waitForSteamCall(ugc.removeItemFromFavorites(publishedFileId));
+
+console.log(ugc.getNumSubscribedItems());
+console.log(ugc.getSubscribedItems());
+
+if (ugc.downloadItem(publishedFileId, true)) {
+	let downloaded = false;
+	while (!downloaded) {
+		for (const event of update()) {
+			if (event.type === 'download-item-result' && event.publishedFileId === publishedFileId) {
+				downloaded = true;
+				console.log(event.result);
+			}
+		}
+		await new Promise((resolve) => setTimeout(resolve, 16));
+	}
+}
+
+console.log(ugc.getItemDownloadInfo(publishedFileId));
+await waitForSteamCall(ugc.unsubscribeItem(publishedFileId));
+
+const created = await waitForSteamCall(ugc.createItem(utils.getAppId(), WorkshopFileType.Community));
+const updateHandle = ugc.startItemUpdate(utils.getAppId(), created.publishedFileId);
+ugc.setItemTitle(updateHandle, 'Workshop Item');
+ugc.setItemDescription(updateHandle, 'Description');
+ugc.setItemMetadata(updateHandle, JSON.stringify({ version: 1 }));
+ugc.setItemVisibility(updateHandle, RemoteStoragePublishedFileVisibility.Public);
+ugc.setItemTags(updateHandle, ['level']);
+ugc.setItemContent(updateHandle, './workshop-content');
+ugc.setItemPreview(updateHandle, './preview.png');
+
+const submitPromise = ugc.submitItemUpdate(updateHandle, 'Initial upload');
+console.log(ugc.getItemUpdateProgress(updateHandle));
+const submitted = await waitForSteamCall(submitPromise);
+console.log(submitted.publishedFileId);
 
 const publish = await waitForSteamCall(
 	ugc.publish('item.dat', 'Workshop Item', 'Description', 'preview.png', {
@@ -334,6 +426,10 @@ Top-level enum objects:
 - `UserUGCList`
 - `UserUGCListSortOrder`
 - `UGCItemState`
+- `ItemUpdateStatus`
+- `ItemPreviewType`
+- `RemoteStoragePublishedFileVisibility`
+- `WorkshopFileType`
 - `FloatingGamepadTextInputMode`
 - `P2PSendType`
 - `BeginAuthSessionResult`
@@ -375,6 +471,7 @@ Top-level constants:
 - `dlc-installed`: `{ appId }`
 - `new-url-launch-parameters`: `{}`
 - `floating-gamepad-text-input-dismissed`: `{}`
+- `download-item-result`: `{ appId, publishedFileId, result }`
 
 ```ts
 for (const event of update()) {

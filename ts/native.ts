@@ -9,6 +9,9 @@ export type TSteamPublishedFileId = string & {
 	readonly __steamPublishedFileId: unique symbol;
 };
 export type TSteamUgcHandle = string & { readonly __steamUgcHandle: unique symbol };
+export type TSteamUgcUpdateHandle = string & {
+	readonly __steamUgcUpdateHandle: unique symbol;
+};
 
 export type TSteamInitResult = Readonly<{
 	result: number;
@@ -103,6 +106,29 @@ export type TSteamUgcItemInstallInfo = Readonly<{
 export type TSteamUgcQueryOptions = Readonly<{
 	appId?: number;
 	page?: number;
+	requiredTags?: string[];
+	excludedTags?: string[];
+	requiredTagGroups?: string[][];
+	matchAnyTag?: boolean;
+	returnMetadata?: boolean;
+	returnLongDescription?: boolean;
+	returnAdditionalPreviews?: boolean;
+	returnChildren?: boolean;
+	returnKeyValueTags?: boolean;
+	returnTotalOnly?: boolean;
+	language?: string;
+	allowCachedResponseMaxAgeSeconds?: number;
+}>;
+
+export type TSteamUgcAdditionalPreview = Readonly<{
+	urlOrVideoId: string;
+	originalFileName: string;
+	previewType: number;
+}>;
+
+export type TSteamUgcKeyValueTag = Readonly<{
+	key: string;
+	value: string;
 }>;
 
 export type TSteamUgcDetails = Readonly<{
@@ -133,6 +159,10 @@ export type TSteamUgcDetails = Readonly<{
 	votesUp: number;
 	numChildren: number;
 	totalFilesSize: string;
+	metadata?: string;
+	children?: TSteamPublishedFileId[];
+	additionalPreviews?: TSteamUgcAdditionalPreview[];
+	keyValueTags?: TSteamUgcKeyValueTag[];
 }>;
 
 export type TSteamUgcQueryResult = Readonly<{
@@ -151,6 +181,54 @@ export type TSteamUgcDownloadResult = Readonly<{
 	fileName: string;
 	steamIdOwner: TSteamId;
 	path: string;
+}>;
+
+export type TSteamUgcSubscribeItemResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+}>;
+
+export type TSteamUgcCreateItemResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	userNeedsToAcceptWorkshopLegalAgreement: boolean;
+}>;
+
+export type TSteamUgcSubmitItemUpdateResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	userNeedsToAcceptWorkshopLegalAgreement: boolean;
+}>;
+
+export type TSteamUgcItemUpdateProgress = Readonly<{
+	status: number;
+	bytesProcessed: string;
+	bytesTotal: string;
+}>;
+
+export type TSteamUgcItemDownloadInfo = Readonly<{
+	bytesDownloaded: string;
+	bytesTotal: string;
+}>;
+
+export type TSteamUgcSetUserItemVoteResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	voteUp: boolean;
+}>;
+
+export type TSteamUgcGetUserItemVoteResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	votedUp: boolean;
+	votedDown: boolean;
+	voteSkipped: boolean;
+}>;
+
+export type TSteamUgcFavoriteItemsListChangedResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	wasAddRequest: boolean;
 }>;
 
 export type TSteamUgcUnsubscribeResult = Readonly<{
@@ -503,6 +581,50 @@ export type TSteamUgcItemState = TSteamEnum<
 	| 'NeedsUpdate'
 	| 'Downloading'
 	| 'DownloadPending'
+	| 'DisabledLocally'
+>;
+
+export type TSteamItemUpdateStatus = TSteamEnum<
+	| 'Invalid'
+	| 'PreparingConfig'
+	| 'PreparingContent'
+	| 'UploadingContent'
+	| 'UploadingPreviewFile'
+	| 'CommittingChanges'
+>;
+
+export type TSteamItemPreviewType = TSteamEnum<
+	| 'Image'
+	| 'YouTubeVideo'
+	| 'Sketchfab'
+	| 'EnvironmentMapHorizontalCross'
+	| 'EnvironmentMapLatLong'
+	| 'Clip'
+	| 'ReservedMax'
+>;
+
+export type TSteamRemoteStoragePublishedFileVisibility = TSteamEnum<
+	'Public' | 'FriendsOnly' | 'Private' | 'Unlisted'
+>;
+
+export type TSteamWorkshopFileType = TSteamEnum<
+	| 'Community'
+	| 'Microtransaction'
+	| 'Collection'
+	| 'Art'
+	| 'Video'
+	| 'Screenshot'
+	| 'Game'
+	| 'Software'
+	| 'Concept'
+	| 'WebGuide'
+	| 'IntegratedGuide'
+	| 'Merch'
+	| 'ControllerBinding'
+	| 'SteamworksAccessInvite'
+	| 'SteamVideo'
+	| 'GameManagedItem'
+	| 'Clip'
 >;
 
 export type TSteamFloatingGamepadTextInputMode = TSteamEnum<
@@ -681,6 +803,12 @@ export type TSteamCallbackEvent =
 	  }>
 	| Readonly<{
 			type: 'floating-gamepad-text-input-dismissed';
+	  }>
+	| Readonly<{
+			type: 'download-item-result';
+			appId: number;
+			publishedFileId: TSteamPublishedFileId;
+			result: number;
 	  }>;
 
 export type TSteamNamespace = Readonly<{
@@ -846,7 +974,58 @@ export type TSteamNativeUgcNamespace = Readonly<{
 		sortOrder: number,
 		list: number,
 	) => Promise<TSteamUgcQueryResult>;
-	downloadItem: (file: TSteamUgcHandle, downloadDir: string) => Promise<TSteamUgcDownloadResult>;
+	createItem: (appId?: number, fileType?: number) => Promise<TSteamUgcCreateItemResult>;
+	startItemUpdate: (
+		appId: number,
+		publishedFileId: TSteamPublishedFileId,
+	) => TSteamUgcUpdateHandle;
+	setItemTitle: (updateHandle: TSteamUgcUpdateHandle, title: string) => boolean;
+	setItemDescription: (updateHandle: TSteamUgcUpdateHandle, description: string) => boolean;
+	setItemMetadata: (updateHandle: TSteamUgcUpdateHandle, metadata: string) => boolean;
+	setItemVisibility: (updateHandle: TSteamUgcUpdateHandle, visibility: number) => boolean;
+	setItemTags: (
+		updateHandle: TSteamUgcUpdateHandle,
+		tags: string[],
+		allowAdminTags?: boolean,
+	) => boolean;
+	setItemContent: (updateHandle: TSteamUgcUpdateHandle, contentFolder: string) => boolean;
+	setItemPreview: (updateHandle: TSteamUgcUpdateHandle, previewFile: string) => boolean;
+	submitItemUpdate: (
+		updateHandle: TSteamUgcUpdateHandle,
+		changeNote?: string,
+	) => Promise<TSteamUgcSubmitItemUpdateResult>;
+	getItemUpdateProgress: (updateHandle: TSteamUgcUpdateHandle) => TSteamUgcItemUpdateProgress;
+	setUserItemVote: (
+		publishedFileId: TSteamPublishedFileId,
+		voteUp: boolean,
+	) => Promise<TSteamUgcSetUserItemVoteResult>;
+	getUserItemVote: (
+		publishedFileId: TSteamPublishedFileId,
+	) => Promise<TSteamUgcGetUserItemVoteResult>;
+	addItemToFavorites: (
+		publishedFileId: TSteamPublishedFileId,
+		appId?: number,
+	) => Promise<TSteamUgcFavoriteItemsListChangedResult>;
+	removeItemFromFavorites: (
+		publishedFileId: TSteamPublishedFileId,
+		appId?: number,
+	) => Promise<TSteamUgcFavoriteItemsListChangedResult>;
+	subscribeItem: (
+		publishedFileId: TSteamPublishedFileId,
+	) => Promise<TSteamUgcSubscribeItemResult>;
+	unsubscribeItem: (
+		publishedFileId: TSteamPublishedFileId,
+	) => Promise<TSteamUgcUnsubscribeResult>;
+	getNumSubscribedItems: (includeLocallyDisabled?: boolean) => number;
+	getSubscribedItems: (
+		maxEntries?: number,
+		includeLocallyDisabled?: boolean,
+	) => TSteamPublishedFileId[];
+	getItemDownloadInfo: (
+		publishedFileId: TSteamPublishedFileId,
+	) => TSteamUgcItemDownloadInfo | null;
+	downloadItem: (publishedFileId: TSteamPublishedFileId, highPriority?: boolean) => boolean;
+	download: (file: TSteamUgcHandle, downloadDir: string) => Promise<TSteamUgcDownloadResult>;
 	unsubscribe: (publishedFileId: TSteamPublishedFileId) => Promise<TSteamUgcUnsubscribeResult>;
 	saveFilesToCloud: (filePaths: string[]) => TSteamUgcSaveFilesToCloudResult;
 	fileShare: (filePath: string) => Promise<TSteamUgcFileShareResult>;
@@ -938,6 +1117,10 @@ type TNativeEnums = Readonly<{
 	UserUGCList: TSteamUserUgcList;
 	UserUGCListSortOrder: TSteamUserUgcListSortOrder;
 	UGCItemState: TSteamUgcItemState;
+	ItemUpdateStatus: TSteamItemUpdateStatus;
+	ItemPreviewType: TSteamItemPreviewType;
+	RemoteStoragePublishedFileVisibility: TSteamRemoteStoragePublishedFileVisibility;
+	WorkshopFileType: TSteamWorkshopFileType;
 	FloatingGamepadTextInputMode: TSteamFloatingGamepadTextInputMode;
 	P2PSendType: TSteamP2PSendType;
 	BeginAuthSessionResult: TSteamBeginAuthSessionResult;

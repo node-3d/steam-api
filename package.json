@@ -17,8 +17,8 @@
 		"gyp"
 	],
 	"files": [
+		"docs",
 		"dist",
-		"GREENWORKS.md",
 		"install.js",
 		"LICENSE",
 		"package.json",

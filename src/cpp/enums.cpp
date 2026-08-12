@@ -389,6 +389,73 @@ void setEnumExports(Napi::Env env, Napi::Object exports) {
 	        { "NeedsUpdate", k_EItemStateNeedsUpdate },
 	        { "Downloading", k_EItemStateDownloading },
 	        { "DownloadPending", k_EItemStateDownloadPending },
+	        { "DisabledLocally", k_EItemStateDisabledLocally },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "ItemUpdateStatus",
+	    {
+	        { "Invalid", k_EItemUpdateStatusInvalid },
+	        { "PreparingConfig", k_EItemUpdateStatusPreparingConfig },
+	        { "PreparingContent", k_EItemUpdateStatusPreparingContent },
+	        { "UploadingContent", k_EItemUpdateStatusUploadingContent },
+	        { "UploadingPreviewFile", k_EItemUpdateStatusUploadingPreviewFile },
+	        { "CommittingChanges", k_EItemUpdateStatusCommittingChanges },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "ItemPreviewType",
+	    {
+	        { "Image", k_EItemPreviewType_Image },
+	        { "YouTubeVideo", k_EItemPreviewType_YouTubeVideo },
+	        { "Sketchfab", k_EItemPreviewType_Sketchfab },
+	        { "EnvironmentMapHorizontalCross", k_EItemPreviewType_EnvironmentMap_HorizontalCross },
+	        { "EnvironmentMapLatLong", k_EItemPreviewType_EnvironmentMap_LatLong },
+	        { "Clip", k_EItemPreviewType_Clip },
+	        { "ReservedMax", k_EItemPreviewType_ReservedMax },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "RemoteStoragePublishedFileVisibility",
+	    {
+	        { "Public", k_ERemoteStoragePublishedFileVisibilityPublic },
+	        { "FriendsOnly", k_ERemoteStoragePublishedFileVisibilityFriendsOnly },
+	        { "Private", k_ERemoteStoragePublishedFileVisibilityPrivate },
+	        { "Unlisted", k_ERemoteStoragePublishedFileVisibilityUnlisted },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "WorkshopFileType",
+	    {
+	        { "Community", k_EWorkshopFileTypeCommunity },
+	        { "Microtransaction", k_EWorkshopFileTypeMicrotransaction },
+	        { "Collection", k_EWorkshopFileTypeCollection },
+	        { "Art", k_EWorkshopFileTypeArt },
+	        { "Video", k_EWorkshopFileTypeVideo },
+	        { "Screenshot", k_EWorkshopFileTypeScreenshot },
+	        { "Game", k_EWorkshopFileTypeGame },
+	        { "Software", k_EWorkshopFileTypeSoftware },
+	        { "Concept", k_EWorkshopFileTypeConcept },
+	        { "WebGuide", k_EWorkshopFileTypeWebGuide },
+	        { "IntegratedGuide", k_EWorkshopFileTypeIntegratedGuide },
+	        { "Merch", k_EWorkshopFileTypeMerch },
+	        { "ControllerBinding", k_EWorkshopFileTypeControllerBinding },
+	        { "SteamworksAccessInvite", k_EWorkshopFileTypeSteamworksAccessInvite },
+	        { "SteamVideo", k_EWorkshopFileTypeSteamVideo },
+	        { "GameManagedItem", k_EWorkshopFileTypeGameManagedItem },
+	        { "Clip", k_EWorkshopFileTypeClip },
 	    }
 	);
 

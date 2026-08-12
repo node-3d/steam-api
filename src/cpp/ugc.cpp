@@ -11,15 +11,35 @@
 #include <utility>
 
 namespace steam_api::ugc {
-struct QueryOptions {
-	uint32 appId;
-	uint32 page;
-};
-
 struct Tags {
 	bool isSet = false;
 	std::vector<std::string> values;
 	std::vector<const char *> pointers;
+};
+
+struct QueryOptions {
+	uint32 appId;
+	uint32 page;
+	std::vector<std::string> requiredTags;
+	std::vector<std::string> excludedTags;
+	std::vector<Tags> requiredTagGroups;
+	bool hasMatchAnyTag = false;
+	bool matchAnyTag = false;
+	bool hasReturnMetadata = false;
+	bool returnMetadata = false;
+	bool hasReturnLongDescription = false;
+	bool returnLongDescription = false;
+	bool hasReturnAdditionalPreviews = false;
+	bool returnAdditionalPreviews = false;
+	bool hasReturnChildren = false;
+	bool returnChildren = false;
+	bool hasReturnKeyValueTags = false;
+	bool returnKeyValueTags = false;
+	bool hasReturnTotalOnly = false;
+	bool returnTotalOnly = false;
+	std::string language;
+	bool hasAllowCachedResponse = false;
+	uint32 allowCachedResponseMaxAgeSeconds = 0;
 };
 
 struct PublishOptions {
@@ -99,7 +119,8 @@ bool readOptionalUint32Property(
     const char *name,
     const char *alias,
     uint32 defaultValue,
-    uint32 *target
+    uint32 *target,
+    bool *isSet = nullptr
 ) {
 	Napi::Value value = object.Get(name);
 	if ((value.IsNull() || value.IsUndefined()) && alias != nullptr) {
@@ -108,10 +129,143 @@ bool readOptionalUint32Property(
 
 	if (value.IsNull() || value.IsUndefined()) {
 		*target = defaultValue;
+		if (isSet != nullptr) {
+			*isSet = false;
+		}
 		return true;
 	}
 
-	return numberToUint32(env, value, name, target);
+	if (!numberToUint32(env, value, name, target)) {
+		return false;
+	}
+	if (isSet != nullptr) {
+		*isSet = true;
+	}
+	return true;
+}
+
+bool readOptionalBoolProperty(
+    Napi::Env env, Napi::Object object, const char *name, bool defaultValue, bool *target, bool *isSet
+) {
+	Napi::Value value = object.Get(name);
+	if (value.IsNull() || value.IsUndefined()) {
+		*target = defaultValue;
+		*isSet = false;
+		return true;
+	}
+
+	if (!value.IsBoolean()) {
+		JS_THROW(std::string(name) + " must be a boolean.");
+		return false;
+	}
+
+	*target = value.As<Napi::Boolean>().Value();
+	*isSet = true;
+	return true;
+}
+
+bool readStringArray(Napi::Env env, Napi::Value value, const char *name, std::vector<std::string> *target) {
+	if (!value.IsArray()) {
+		JS_THROW(std::string(name) + " must be an array of strings.");
+		return false;
+	}
+
+	Napi::Array array = value.As<Napi::Array>();
+	target->clear();
+	target->reserve(array.Length());
+
+	for (uint32 i = 0; i < array.Length(); i++) {
+		Napi::Value item = array.Get(i);
+		if (!item.IsString()) {
+			JS_THROW(std::string(name) + " must contain only strings.");
+			return false;
+		}
+		target->push_back(item.As<Napi::String>().Utf8Value());
+	}
+
+	return true;
+}
+
+bool readOptionalStringArrayProperty(
+    Napi::Env env, Napi::Object object, const char *name, std::vector<std::string> *target
+) {
+	Napi::Value value = object.Get(name);
+	if (value.IsNull() || value.IsUndefined()) {
+		target->clear();
+		return true;
+	}
+
+	return readStringArray(env, value, name, target);
+}
+
+bool readTagsFromArray(Napi::Env env, Napi::Value value, const char *name, Tags *tags) {
+	if (!readStringArray(env, value, name, &tags->values)) {
+		return false;
+	}
+
+	if (tags->values.size() > 100) {
+		JS_THROW(std::string(name) + " must contain at most 100 strings.");
+		return false;
+	}
+
+	tags->isSet = true;
+	tags->pointers.clear();
+	tags->pointers.reserve(tags->values.size());
+
+	for (const std::string &tag : tags->values) {
+		tags->pointers.push_back(tag.c_str());
+	}
+
+	return true;
+}
+
+bool readOptionalTagGroupsProperty(
+    Napi::Env env, Napi::Object object, const char *name, std::vector<Tags> *target
+) {
+	Napi::Value value = object.Get(name);
+	if (value.IsNull() || value.IsUndefined()) {
+		target->clear();
+		return true;
+	}
+
+	if (!value.IsArray()) {
+		JS_THROW(std::string(name) + " must be an array of string arrays.");
+		return false;
+	}
+
+	Napi::Array array = value.As<Napi::Array>();
+	target->clear();
+	target->reserve(array.Length());
+
+	for (uint32 i = 0; i < array.Length(); i++) {
+		Tags group = {};
+		std::string itemName = std::string(name) + " entries";
+		if (!readTagsFromArray(env, array.Get(i), itemName.c_str(), &group)) {
+			return false;
+		}
+		if (group.values.empty()) {
+			JS_THROW(std::string(name) + " entries must contain at least one tag.");
+			return false;
+		}
+		target->push_back(std::move(group));
+	}
+
+	return true;
+}
+
+bool readOptionalStringProperty(Napi::Env env, Napi::Object object, const char *name, std::string *target) {
+	Napi::Value value = object.Get(name);
+	if (value.IsNull() || value.IsUndefined()) {
+		target->clear();
+		return true;
+	}
+	if (!value.IsString()) {
+		JS_THROW(std::string(name) + " must be a string.");
+		return false;
+	}
+
+	*target = value.As<Napi::String>().Utf8Value();
+	return true;
 }
 
 bool readQueryOptions(Napi::Env env, Napi::Value value, QueryOptions *options) {
@@ -134,7 +288,141 @@ bool readQueryOptions(Napi::Env env, Napi::Value value, QueryOptions *options) {
 
 	Napi::Object object = value.As<Napi::Object>();
 	return readOptionalUint32Property(env, object, "appId", "app_id", options->appId, &options->appId) &&
-	    readOptionalUint32Property(env, object, "page", "page_num", options->page, &options->page);
+	    readOptionalUint32Property(env, object, "page", "page_num", options->page, &options->page) &&
+	    readOptionalStringArrayProperty(env, object, "requiredTags", &options->requiredTags) &&
+	    readOptionalStringArrayProperty(env, object, "excludedTags", &options->excludedTags) &&
+	    readOptionalTagGroupsProperty(env, object, "requiredTagGroups", &options->requiredTagGroups) &&
+	    readOptionalBoolProperty(
+	           env, object, "matchAnyTag", false, &options->matchAnyTag, &options->hasMatchAnyTag
+	    ) &&
+	    readOptionalBoolProperty(
+	           env, object, "returnMetadata", false, &options->returnMetadata, &options->hasReturnMetadata
+	    ) &&
+	    readOptionalBoolProperty(
+	           env,
+	           object,
+	           "returnLongDescription",
+	           false,
+	           &options->returnLongDescription,
+	           &options->hasReturnLongDescription
+	    ) &&
+	    readOptionalBoolProperty(
+	           env,
+	           object,
+	           "returnAdditionalPreviews",
+	           false,
+	           &options->returnAdditionalPreviews,
+	           &options->hasReturnAdditionalPreviews
+	    ) &&
+	    readOptionalBoolProperty(
+	           env, object, "returnChildren", false, &options->returnChildren, &options->hasReturnChildren
+	    ) &&
+	    readOptionalBoolProperty(
+	           env,
+	           object,
+	           "returnKeyValueTags",
+	           false,
+	           &options->returnKeyValueTags,
+	           &options->hasReturnKeyValueTags
+	    ) &&
+	    readOptionalBoolProperty(
+	           env, object, "returnTotalOnly", false, &options->returnTotalOnly, &options->hasReturnTotalOnly
+	    ) &&
+	    readOptionalStringProperty(env, object, "language", &options->language) &&
+	    readOptionalUint32Property(
+	           env,
+	           object,
+	           "allowCachedResponseMaxAgeSeconds",
+	           nullptr,
+	           options->allowCachedResponseMaxAgeSeconds,
+	           &options->allowCachedResponseMaxAgeSeconds,
+	           &options->hasAllowCachedResponse
+	    );
+}
+
+SteamParamStringArray_t makeSteamTags(Tags &tags);
+
+bool applyQueryOptions(
+    Napi::Env env, ISteamUGC *ugc, UGCQueryHandle_t queryHandle, QueryOptions &options, bool isAllUgcQuery
+) {
+	for (const std::string &tag : options.requiredTags) {
+		if (!ugc->AddRequiredTag(queryHandle, tag.c_str())) {
+			JS_THROW("Steam UGC query required tag could not be set.");
+			return false;
+		}
+	}
+
+	for (Tags &tagGroup : options.requiredTagGroups) {
+		SteamParamStringArray_t steamTags = makeSteamTags(tagGroup);
+		if (!ugc->AddRequiredTagGroup(queryHandle, &steamTags)) {
+			JS_THROW("Steam UGC query required tag group could not be set.");
+			return false;
+		}
+	}
+
+	for (const std::string &tag : options.excludedTags) {
+		if (!ugc->AddExcludedTag(queryHandle, tag.c_str())) {
+			JS_THROW("Steam UGC query excluded tag could not be set.");
+			return false;
+		}
+	}
+
+	if (options.hasMatchAnyTag) {
+		if (!isAllUgcQuery) {
+			JS_THROW("matchAnyTag is only supported by ugc.getItems().");
+			return false;
+		}
+		if (!ugc->SetMatchAnyTag(queryHandle, options.matchAnyTag)) {
+			JS_THROW("Steam UGC query match-any-tag option could not be set.");
+			return false;
+		}
+	}
+
+	if (options.hasReturnMetadata && !ugc->SetReturnMetadata(queryHandle, options.returnMetadata)) {
+		JS_THROW("Steam UGC query metadata return option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnLongDescription &&
+	    !ugc->SetReturnLongDescription(queryHandle, options.returnLongDescription)) {
+		JS_THROW("Steam UGC query long-description return option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnAdditionalPreviews &&
+	    !ugc->SetReturnAdditionalPreviews(queryHandle, options.returnAdditionalPreviews)) {
+		JS_THROW("Steam UGC query additional-previews return option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnChildren && !ugc->SetReturnChildren(queryHandle, options.returnChildren)) {
+		JS_THROW("Steam UGC query children return option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnKeyValueTags &&
+	    !ugc->SetReturnKeyValueTags(queryHandle, options.returnKeyValueTags)) {
+		JS_THROW("Steam UGC query key-value-tags return option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnTotalOnly && !ugc->SetReturnTotalOnly(queryHandle, options.returnTotalOnly)) {
+		JS_THROW("Steam UGC query total-only return option could not be set.");
+		return false;
+	}
+
+	if (!options.language.empty() && !ugc->SetLanguage(queryHandle, options.language.c_str())) {
+		JS_THROW("Steam UGC query language option could not be set.");
+		return false;
+	}
+
+	if (options.hasAllowCachedResponse &&
+	    !ugc->SetAllowCachedResponse(queryHandle, options.allowCachedResponseMaxAgeSeconds)) {
+		JS_THROW("Steam UGC query cached-response option could not be set.");
+		return false;
+	}
+
+	return true;
 }
 
 bool readOptionalInt32Property(
@@ -174,27 +462,46 @@ bool readOptionalInt32Property(
 	return true;
 }
 
-bool readOptionalStringProperty(Napi::Env env, Napi::Object object, const char *name, std::string *target) {
-	Napi::Value value = object.Get(name);
-	if (value.IsNull() || value.IsUndefined()) {
-		target->clear();
-		return true;
-	}
-	if (!value.IsString()) {
-		JS_THROW(std::string(name) + " must be a string.");
-		return false;
-	}
-
-	*target = value.As<Napi::String>().Utf8Value();
-	return true;
-}
-
 bool readOptionalTags(Napi::Env env, Napi::Object object, Tags *tags) {
 	Napi::Value value = object.Get("tags");
 	if (value.IsNull() || value.IsUndefined()) {
 		tags->isSet = false;
 		return true;
 	}
+	if (!value.IsArray()) {
+		JS_THROW("tags must be an array of strings.");
+		return false;
+	}
+
+	Napi::Array array = value.As<Napi::Array>();
+	if (array.Length() > 100) {
+		JS_THROW("tags must contain at most 100 strings.");
+		return false;
+	}
+
+	tags->isSet = true;
+	tags->values.clear();
+	tags->pointers.clear();
+	tags->values.reserve(array.Length());
+	tags->pointers.reserve(array.Length());
+
+	for (uint32 i = 0; i < array.Length(); i++) {
+		Napi::Value item = array.Get(i);
+		if (!item.IsString()) {
+			JS_THROW("tags must contain only strings.");
+			return false;
+		}
+		tags->values.push_back(item.As<Napi::String>().Utf8Value());
+	}
+
+	for (const std::string &tag : tags->values) {
+		tags->pointers.push_back(tag.c_str());
+	}
+
+	return true;
+}
+
+bool readTagsArray(Napi::Env env, Napi::Value value, Tags *tags) {
 	if (!value.IsArray()) {
 		JS_THROW("tags must be an array of strings.");
 		return false;
@@ -372,11 +679,129 @@ Napi::Object makeUgcDetails(Napi::Env env, const SteamUGCDetails_t &item) {
 	return result;
 }
 
+bool addQueryReturnFields(
+    Napi::Env env,
+    ISteamUGC *ugc,
+    UGCQueryHandle_t queryHandle,
+    uint32 index,
+    const SteamUGCDetails_t &item,
+    const QueryOptions &options,
+    Napi::Object result,
+    std::string *error
+) {
+	if (options.hasReturnMetadata && options.returnMetadata) {
+		std::vector<char> metadata(k_cchDeveloperMetadataMax, '\0');
+		if (!ugc->GetQueryUGCMetadata(
+		        queryHandle, index, metadata.data(), static_cast<uint32>(metadata.size())
+		    )) {
+			*error = "Steam UGC query metadata could not be read.";
+			return false;
+		}
+		result.Set("metadata", metadata.data());
+	}
+
+	if (options.hasReturnChildren && options.returnChildren) {
+		std::vector<PublishedFileId_t> children(item.m_unNumChildren);
+		if (!children.empty() &&
+		    !ugc->GetQueryUGCChildren(
+		        queryHandle, index, children.data(), static_cast<uint32>(children.size())
+		    )) {
+			*error = "Steam UGC query children could not be read.";
+			return false;
+		}
+
+		Napi::Array value = Napi::Array::New(env, children.size());
+		for (uint32 i = 0; i < children.size(); i++) {
+			value.Set(i, jsStringFromUint64(env, children[i]));
+		}
+		result.Set("children", value);
+	}
+
+	if (options.hasReturnAdditionalPreviews && options.returnAdditionalPreviews) {
+		uint32 count = ugc->GetQueryUGCNumAdditionalPreviews(queryHandle, index);
+		Napi::Array value = Napi::Array::New(env, count);
+
+		for (uint32 i = 0; i < count; i++) {
+			std::vector<char> urlOrVideoId(k_cchPublishedFileURLMax, '\0');
+			std::vector<char> originalFileName(k_cchFilenameMax, '\0');
+			EItemPreviewType previewType = k_EItemPreviewType_Image;
+			if (!ugc->GetQueryUGCAdditionalPreview(
+			        queryHandle,
+			        index,
+			        i,
+			        urlOrVideoId.data(),
+			        static_cast<uint32>(urlOrVideoId.size()),
+			        originalFileName.data(),
+			        static_cast<uint32>(originalFileName.size()),
+			        &previewType
+			    )) {
+				*error = "Steam UGC query additional preview could not be read.";
+				return false;
+			}
+
+			Napi::Object preview = JS_OBJECT;
+			preview.Set("urlOrVideoId", urlOrVideoId.data());
+			preview.Set("originalFileName", originalFileName.data());
+			preview.Set("previewType", static_cast<int32_t>(previewType));
+			value.Set(i, preview);
+		}
+		result.Set("additionalPreviews", value);
+	}
+
+	if (options.hasReturnKeyValueTags && options.returnKeyValueTags) {
+		uint32 count = ugc->GetQueryUGCNumKeyValueTags(queryHandle, index);
+		Napi::Array value = Napi::Array::New(env, count);
+
+		for (uint32 i = 0; i < count; i++) {
+			std::vector<char> key(k_cchTagListMax, '\0');
+			std::vector<char> tagValue(k_cchTagListMax, '\0');
+			if (!ugc->GetQueryUGCKeyValueTag(
+			        queryHandle,
+			        index,
+			        i,
+			        key.data(),
+			        static_cast<uint32>(key.size()),
+			        tagValue.data(),
+			        static_cast<uint32>(tagValue.size())
+			    )) {
+				*error = "Steam UGC query key-value tag could not be read.";
+				return false;
+			}
+
+			Napi::Object tag = JS_OBJECT;
+			tag.Set("key", key.data());
+			tag.Set("value", tagValue.data());
+			value.Set(i, tag);
+		}
+		result.Set("keyValueTags", value);
+	}
+
+	return true;
+}
+
+bool readUgcUpdateHandle(Napi::Env env, const std::string &source, UGCUpdateHandle_t *target) {
+	uint64 value = 0;
+	if (!uint64FromJsString(env, source, "updateHandle", &value)) {
+		return false;
+	}
+	*target = static_cast<UGCUpdateHandle_t>(value);
+	return true;
+}
+
+bool readPublishedFileId(Napi::Env env, const std::string &source, PublishedFileId_t *target) {
+	uint64 value = 0;
+	if (!uint64FromJsString(env, source, "publishedFileId", &value)) {
+		return false;
+	}
+	*target = static_cast<PublishedFileId_t>(value);
+	return true;
+}
+
 class QueryRequest : public PendingCallResultRequest<QueryRequest, SteamUGCQueryCompleted_t> {
 	using Base = PendingCallResultRequest<QueryRequest, SteamUGCQueryCompleted_t>;
 
   public:
-	explicit QueryRequest(Napi::Env env) : Base(env) {}
+	QueryRequest(Napi::Env env, QueryOptions options) : Base(env), _options(std::move(options)) {}
 
 	void onCompleted(SteamUGCQueryCompleted_t *result, bool ioFailure) {
 		markCompleted();
@@ -419,7 +844,15 @@ class QueryRequest : public PendingCallResultRequest<QueryRequest, SteamUGCQuery
 				);
 				return;
 			}
-			items.Set(i, makeUgcDetails(env(), item));
+
+			Napi::Object value = makeUgcDetails(env(), item);
+			std::string error;
+			if (!addQueryReturnFields(env(), ugc, result->m_handle, i, item, _options, value, &error)) {
+				ugc->ReleaseQueryUGCRequest(result->m_handle);
+				deferred().Reject(Napi::Error::New(env(), error).Value());
+				return;
+			}
+			items.Set(i, value);
 		}
 
 		ugc->ReleaseQueryUGCRequest(result->m_handle);
@@ -432,12 +865,284 @@ class QueryRequest : public PendingCallResultRequest<QueryRequest, SteamUGCQuery
 		queryResult.Set("items", items);
 		deferred().Resolve(queryResult);
 	}
+
+  private:
+	QueryOptions _options;
 };
 
 std::vector<std::unique_ptr<QueryRequest>> pendingQueries;
 
-Napi::Promise trackQuery(Napi::Env env, SteamAPICall_t call) {
-	return trackCallResult<QueryRequest>(env, call, pendingQueries);
+Napi::Promise trackQuery(Napi::Env env, SteamAPICall_t call, QueryOptions options) {
+	return trackCallResult<QueryRequest>(env, call, pendingQueries, std::move(options));
+}
+
+class CreateItemRequest : public PendingCallResultRequest<CreateItemRequest, CreateItemResult_t> {
+	using Base = PendingCallResultRequest<CreateItemRequest, CreateItemResult_t>;
+
+  public:
+	explicit CreateItemRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(CreateItemResult_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC create item failed: Steam API IO failure.").Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC create item failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		value.Set(
+		    "userNeedsToAcceptWorkshopLegalAgreement", result->m_bUserNeedsToAcceptWorkshopLegalAgreement
+		);
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<CreateItemRequest>> pendingCreateItems;
+
+Napi::Promise trackCreateItem(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<CreateItemRequest>(env, call, pendingCreateItems);
+}
+
+class SubmitItemUpdateRequest
+    : public PendingCallResultRequest<SubmitItemUpdateRequest, SubmitItemUpdateResult_t> {
+	using Base = PendingCallResultRequest<SubmitItemUpdateRequest, SubmitItemUpdateResult_t>;
+
+  public:
+	explicit SubmitItemUpdateRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(SubmitItemUpdateResult_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC submit item update failed: Steam API IO failure.").Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC submit item update failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		value.Set(
+		    "userNeedsToAcceptWorkshopLegalAgreement", result->m_bUserNeedsToAcceptWorkshopLegalAgreement
+		);
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<SubmitItemUpdateRequest>> pendingSubmitItemUpdates;
+
+Napi::Promise trackSubmitItemUpdate(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<SubmitItemUpdateRequest>(env, call, pendingSubmitItemUpdates);
+}
+
+class SetUserItemVoteRequest
+    : public PendingCallResultRequest<SetUserItemVoteRequest, SetUserItemVoteResult_t> {
+	using Base = PendingCallResultRequest<SetUserItemVoteRequest, SetUserItemVoteResult_t>;
+
+  public:
+	explicit SetUserItemVoteRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(SetUserItemVoteResult_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC set user item vote failed: Steam API IO failure.").Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC set user item vote failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		value.Set("voteUp", result->m_bVoteUp);
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<SetUserItemVoteRequest>> pendingSetUserItemVotes;
+
+Napi::Promise trackSetUserItemVote(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<SetUserItemVoteRequest>(env, call, pendingSetUserItemVotes);
+}
+
+class GetUserItemVoteRequest
+    : public PendingCallResultRequest<GetUserItemVoteRequest, GetUserItemVoteResult_t> {
+	using Base = PendingCallResultRequest<GetUserItemVoteRequest, GetUserItemVoteResult_t>;
+
+  public:
+	explicit GetUserItemVoteRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(GetUserItemVoteResult_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC get user item vote failed: Steam API IO failure.").Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC get user item vote failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		value.Set("votedUp", result->m_bVotedUp);
+		value.Set("votedDown", result->m_bVotedDown);
+		value.Set("voteSkipped", result->m_bVoteSkipped);
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<GetUserItemVoteRequest>> pendingGetUserItemVotes;
+
+Napi::Promise trackGetUserItemVote(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<GetUserItemVoteRequest>(env, call, pendingGetUserItemVotes);
+}
+
+class FavoriteItemsListChangedRequest
+    : public PendingCallResultRequest<FavoriteItemsListChangedRequest, UserFavoriteItemsListChanged_t> {
+	using Base = PendingCallResultRequest<FavoriteItemsListChangedRequest, UserFavoriteItemsListChanged_t>;
+
+  public:
+	explicit FavoriteItemsListChangedRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(UserFavoriteItemsListChanged_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC favorite item request failed: Steam API IO failure.")
+			        .Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC favorite item request failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		value.Set("wasAddRequest", result->m_bWasAddRequest);
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<FavoriteItemsListChangedRequest>> pendingFavoriteItemsListChanges;
+
+Napi::Promise trackFavoriteItemsListChanged(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<FavoriteItemsListChangedRequest>(env, call, pendingFavoriteItemsListChanges);
+}
+
+class SubscribeItemRequest
+    : public PendingCallResultRequest<SubscribeItemRequest, RemoteStorageSubscribePublishedFileResult_t> {
+	using Base = PendingCallResultRequest<SubscribeItemRequest, RemoteStorageSubscribePublishedFileResult_t>;
+
+  public:
+	explicit SubscribeItemRequest(Napi::Env env) : Base(env) {}
+
+	void onCompleted(RemoteStorageSubscribePublishedFileResult_t *result, bool ioFailure) {
+		markCompleted();
+		Napi::HandleScope scope(env());
+
+		if (ioFailure) {
+			deferred().Reject(
+			    Napi::Error::New(env(), "Steam UGC subscribe item failed: Steam API IO failure.").Value()
+			);
+			return;
+		}
+
+		if (result->m_eResult != k_EResultOK) {
+			deferred().Reject(
+			    Napi::Error::New(
+			        env(),
+			        "Steam UGC subscribe item failed with result " +
+			            std::to_string(static_cast<int32_t>(result->m_eResult)) + "."
+			    )
+			        .Value()
+			);
+			return;
+		}
+
+		Napi::Object value = Napi::Object::New(env());
+		value.Set("result", static_cast<int32_t>(result->m_eResult));
+		value.Set("publishedFileId", jsStringFromUint64(env(), result->m_nPublishedFileId));
+		deferred().Resolve(value);
+	}
+};
+
+std::vector<std::unique_ptr<SubscribeItemRequest>> pendingSubscribeItems;
+
+Napi::Promise trackSubscribeItem(Napi::Env env, SteamAPICall_t call) {
+	return trackCallResult<SubscribeItemRequest>(env, call, pendingSubscribeItems);
 }
 
 class DownloadRequest : public PendingCallResultRequest<DownloadRequest, RemoteStorageDownloadUGCResult_t> {
@@ -718,6 +1423,12 @@ Napi::Promise trackWorkshopUpdate(Napi::Env env, SteamAPICall_t call) {
 
 void rejectPendingPromises(const std::string &message) {
 	rejectPendingCallResults(pendingQueries, message);
+	rejectPendingCallResults(pendingCreateItems, message);
+	rejectPendingCallResults(pendingSubmitItemUpdates, message);
+	rejectPendingCallResults(pendingSetUserItemVotes, message);
+	rejectPendingCallResults(pendingGetUserItemVotes, message);
+	rejectPendingCallResults(pendingFavoriteItemsListChanges, message);
+	rejectPendingCallResults(pendingSubscribeItems, message);
 	rejectPendingCallResults(pendingDownloads, message);
 	rejectPendingCallResults(pendingUnsubscribes, message);
 	rejectPendingCallResults(pendingFileShares, message);
@@ -727,6 +1438,12 @@ void rejectPendingPromises(const std::string &message) {
 
 void clearPendingPromises() {
 	clearPendingCallResults(pendingQueries);
+	clearPendingCallResults(pendingCreateItems);
+	clearPendingCallResults(pendingSubmitItemUpdates);
+	clearPendingCallResults(pendingSetUserItemVotes);
+	clearPendingCallResults(pendingGetUserItemVotes);
+	clearPendingCallResults(pendingFavoriteItemsListChanges);
+	clearPendingCallResults(pendingSubscribeItems);
 	clearPendingCallResults(pendingDownloads);
 	clearPendingCallResults(pendingUnsubscribes);
 	clearPendingCallResults(pendingFileShares);
@@ -789,6 +1506,11 @@ JS_METHOD(getItems) {
 		RET_UNDEFINED;
 	}
 
+	if (!applyQueryOptions(env, value, queryHandle, options, true)) {
+		value->ReleaseQueryUGCRequest(queryHandle);
+		RET_UNDEFINED;
+	}
+
 	SteamAPICall_t call = value->SendQueryUGCRequest(queryHandle);
 	if (call == k_uAPICallInvalid) {
 		value->ReleaseQueryUGCRequest(queryHandle);
@@ -796,7 +1518,7 @@ JS_METHOD(getItems) {
 		RET_UNDEFINED;
 	}
 
-	RET_VALUE(trackQuery(env, call));
+	RET_VALUE(trackQuery(env, call, std::move(options)));
 }
 
 JS_METHOD(getUserItems) {
@@ -834,6 +1556,11 @@ JS_METHOD(getUserItems) {
 		RET_UNDEFINED;
 	}
 
+	if (!applyQueryOptions(env, ugc, queryHandle, options, false)) {
+		ugc->ReleaseQueryUGCRequest(queryHandle);
+		RET_UNDEFINED;
+	}
+
 	SteamAPICall_t call = ugc->SendQueryUGCRequest(queryHandle);
 	if (call == k_uAPICallInvalid) {
 		ugc->ReleaseQueryUGCRequest(queryHandle);
@@ -841,10 +1568,507 @@ JS_METHOD(getUserItems) {
 		RET_UNDEFINED;
 	}
 
-	RET_VALUE(trackQuery(env, call));
+	RET_VALUE(trackQuery(env, call, std::move(options)));
+}
+
+JS_METHOD(createItem) {
+	NAPI_ENV;
+
+	ISteamUtils *utils = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint32 appId = utils->GetAppID();
+	int32_t fileType = k_EWorkshopFileTypeCommunity;
+
+	if (info.Length() > 0 && !IS_ARG_EMPTY(0) && !numberToUint32(env, info[0], "appId", &appId)) {
+		RET_UNDEFINED;
+	}
+	if (info.Length() > 1 && !IS_ARG_EMPTY(1)) {
+		if (!info[1].IsNumber()) {
+			JS_THROW("fileType must be a number.");
+			RET_UNDEFINED;
+		}
+		fileType = info[1].As<Napi::Number>().Int32Value();
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->CreateItem(appId, static_cast<EWorkshopFileType>(fileType));
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC create item request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackCreateItem(env, call));
+}
+
+JS_METHOD(startItemUpdate) {
+	NAPI_ENV;
+	REQ_UINT32_ARG(0, appId);
+	REQ_STR_ARG(1, publishedFileIdString);
+
+	uint64 publishedFileId = 0;
+	if (!uint64FromJsString(env, publishedFileIdString, "publishedFileId", &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	UGCUpdateHandle_t handle = ugc->StartItemUpdate(appId, static_cast<PublishedFileId_t>(publishedFileId));
+	if (handle == k_UGCUpdateHandleInvalid) {
+		JS_THROW("Steam UGC item update handle could not be created.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(jsStringFromUint64(env, handle));
+}
+
+JS_METHOD(setItemTitle) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_STR_ARG(1, title);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemTitle(updateHandle, title.c_str()));
+}
+
+JS_METHOD(setItemDescription) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_STR_ARG(1, description);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemDescription(updateHandle, description.c_str()));
+}
+
+JS_METHOD(setItemMetadata) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_STR_ARG(1, metadata);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemMetadata(updateHandle, metadata.c_str()));
+}
+
+JS_METHOD(setItemVisibility) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_INT32_ARG(1, visibility);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(
+	    ugc->SetItemVisibility(updateHandle, static_cast<ERemoteStoragePublishedFileVisibility>(visibility))
+	);
+}
+
+JS_METHOD(setItemTags) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	USE_BOOL_ARG(2, allowAdminTags, false);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	Tags tags = {};
+	if (info.Length() < 2 || !readTagsArray(env, info[1], &tags)) {
+		RET_UNDEFINED;
+	}
+	SteamParamStringArray_t steamTags = makeSteamTags(tags);
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemTags(updateHandle, &steamTags, allowAdminTags));
+}
+
+JS_METHOD(setItemContent) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_STR_ARG(1, contentFolder);
+
+	if (contentFolder.empty()) {
+		JS_THROW("contentFolder must be a non-empty string.");
+		RET_UNDEFINED;
+	}
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemContent(updateHandle, contentFolder.c_str()));
+}
+
+JS_METHOD(setItemPreview) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	REQ_STR_ARG(1, previewFile);
+
+	if (previewFile.empty()) {
+		JS_THROW("previewFile must be a non-empty string.");
+		RET_UNDEFINED;
+	}
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->SetItemPreview(updateHandle, previewFile.c_str()));
+}
+
+JS_METHOD(submitItemUpdate) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+	USE_STR_ARG(1, changeNote, "");
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->SubmitItemUpdate(updateHandle, changeNote.c_str());
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC submit item update request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackSubmitItemUpdate(env, call));
+}
+
+JS_METHOD(getItemUpdateProgress) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, updateHandleString);
+
+	UGCUpdateHandle_t updateHandle = 0;
+	if (!readUgcUpdateHandle(env, updateHandleString, &updateHandle)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint64 bytesProcessed = 0;
+	uint64 bytesTotal = 0;
+	EItemUpdateStatus status = ugc->GetItemUpdateProgress(updateHandle, &bytesProcessed, &bytesTotal);
+
+	Napi::Object result = JS_OBJECT;
+	result.Set("status", static_cast<int32_t>(status));
+	result.Set("bytesProcessed", jsStringFromUint64(env, bytesProcessed));
+	result.Set("bytesTotal", jsStringFromUint64(env, bytesTotal));
+	RET_VALUE(result);
+}
+
+JS_METHOD(setUserItemVote) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+	REQ_BOOL_ARG(1, voteUp);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->SetUserItemVote(publishedFileId, voteUp);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC set user item vote request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackSetUserItemVote(env, call));
+}
+
+JS_METHOD(getUserItemVote) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->GetUserItemVote(publishedFileId);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC get user item vote request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackGetUserItemVote(env, call));
+}
+
+JS_METHOD(addItemToFavorites) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	ISteamUtils *utils = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint32 appId = utils->GetAppID();
+	if (info.Length() > 1 && !IS_ARG_EMPTY(1) && !numberToUint32(env, info[1], "appId", &appId)) {
+		RET_UNDEFINED;
+	}
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->AddItemToFavorites(appId, publishedFileId);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC add item to favorites request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackFavoriteItemsListChanged(env, call));
+}
+
+JS_METHOD(removeItemFromFavorites) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	ISteamUtils *utils = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint32 appId = utils->GetAppID();
+	if (info.Length() > 1 && !IS_ARG_EMPTY(1) && !numberToUint32(env, info[1], "appId", &appId)) {
+		RET_UNDEFINED;
+	}
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->RemoveItemFromFavorites(appId, publishedFileId);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC remove item from favorites request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackFavoriteItemsListChanged(env, call));
+}
+
+JS_METHOD(subscribeItem) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->SubscribeItem(publishedFileId);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC subscribe item request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackSubscribeItem(env, call));
+}
+
+JS_METHOD(unsubscribeItem) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	SteamAPICall_t call = ugc->UnsubscribeItem(publishedFileId);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam UGC unsubscribe item request could not be sent.");
+		RET_UNDEFINED;
+	}
+
+	RET_VALUE(trackUnsubscribe(env, call));
+}
+
+JS_METHOD(getNumSubscribedItems) {
+	NAPI_ENV;
+	USE_BOOL_ARG(0, includeLocallyDisabled, false);
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_NUM(ugc->GetNumSubscribedItems(includeLocallyDisabled));
+}
+
+JS_METHOD(getSubscribedItems) {
+	NAPI_ENV;
+	USE_UINT32_ARG(0, maxEntries, 0);
+	USE_BOOL_ARG(1, includeLocallyDisabled, false);
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint32 capacity = maxEntries;
+	if (capacity == 0) {
+		capacity = ugc->GetNumSubscribedItems(includeLocallyDisabled);
+	}
+
+	std::vector<PublishedFileId_t> publishedFileIds(capacity);
+	uint32 count = capacity == 0
+	    ? 0
+	    : ugc->GetSubscribedItems(publishedFileIds.data(), capacity, includeLocallyDisabled);
+
+	Napi::Array result = Napi::Array::New(env, count);
+	for (uint32 i = 0; i < count; i++) {
+		result.Set(i, jsStringFromUint64(env, publishedFileIds[i]));
+	}
+
+	RET_VALUE(result);
+}
+
+JS_METHOD(getItemDownloadInfo) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	uint64 bytesDownloaded = 0;
+	uint64 bytesTotal = 0;
+	bool ok = ugc->GetItemDownloadInfo(publishedFileId, &bytesDownloaded, &bytesTotal);
+	if (!ok) {
+		RET_NULL;
+	}
+
+	Napi::Object result = JS_OBJECT;
+	result.Set("bytesDownloaded", jsStringFromUint64(env, bytesDownloaded));
+	result.Set("bytesTotal", jsStringFromUint64(env, bytesTotal));
+	RET_VALUE(result);
 }
 
 JS_METHOD(downloadItem) {
+	NAPI_ENV;
+	REQ_STR_ARG(0, publishedFileIdString);
+	USE_BOOL_ARG(1, highPriority, false);
+
+	PublishedFileId_t publishedFileId = 0;
+	if (!readPublishedFileId(env, publishedFileIdString, &publishedFileId)) {
+		RET_UNDEFINED;
+	}
+
+	ISteamUGC *ugc = steamUgc(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+
+	RET_BOOL(ugc->DownloadItem(publishedFileId, highPriority));
+}
+
+JS_METHOD(download) {
 	NAPI_ENV;
 	REQ_STR_ARG(0, fileString);
 	REQ_STR_ARG(1, downloadDir);
@@ -1168,7 +2392,28 @@ Napi::Object createNamespace(Napi::Env env) {
 	value.Set("showOverlay", Napi::Function::New(env, showOverlay));
 	value.Set("getItems", Napi::Function::New(env, getItems));
 	value.Set("getUserItems", Napi::Function::New(env, getUserItems));
+	value.Set("createItem", Napi::Function::New(env, createItem));
+	value.Set("startItemUpdate", Napi::Function::New(env, startItemUpdate));
+	value.Set("setItemTitle", Napi::Function::New(env, setItemTitle));
+	value.Set("setItemDescription", Napi::Function::New(env, setItemDescription));
+	value.Set("setItemMetadata", Napi::Function::New(env, setItemMetadata));
+	value.Set("setItemVisibility", Napi::Function::New(env, setItemVisibility));
+	value.Set("setItemTags", Napi::Function::New(env, setItemTags));
+	value.Set("setItemContent", Napi::Function::New(env, setItemContent));
+	value.Set("setItemPreview", Napi::Function::New(env, setItemPreview));
+	value.Set("submitItemUpdate", Napi::Function::New(env, submitItemUpdate));
+	value.Set("getItemUpdateProgress", Napi::Function::New(env, getItemUpdateProgress));
+	value.Set("setUserItemVote", Napi::Function::New(env, setUserItemVote));
+	value.Set("getUserItemVote", Napi::Function::New(env, getUserItemVote));
+	value.Set("addItemToFavorites", Napi::Function::New(env, addItemToFavorites));
+	value.Set("removeItemFromFavorites", Napi::Function::New(env, removeItemFromFavorites));
+	value.Set("subscribeItem", Napi::Function::New(env, subscribeItem));
+	value.Set("unsubscribeItem", Napi::Function::New(env, unsubscribeItem));
+	value.Set("getNumSubscribedItems", Napi::Function::New(env, getNumSubscribedItems));
+	value.Set("getSubscribedItems", Napi::Function::New(env, getSubscribedItems));
+	value.Set("getItemDownloadInfo", Napi::Function::New(env, getItemDownloadInfo));
 	value.Set("downloadItem", Napi::Function::New(env, downloadItem));
+	value.Set("download", Napi::Function::New(env, download));
 	value.Set("unsubscribe", Napi::Function::New(env, unsubscribe));
 	value.Set("saveFilesToCloud", Napi::Function::New(env, saveFilesToCloud));
 	value.Set("fileShare", Napi::Function::New(env, fileShare));
