@@ -205,11 +205,15 @@ JS_METHOD(getAuthSessionTicket) {
 		RET_UNDEFINED;
 	}
 
-	std::vector<uint8_t> ticket(4096);
+	std::vector<uint8_t> ticket(kAuthSessionTicketBufferSize);
 	uint32 size = 0;
 	HAuthTicket handle =
 	    value->GetAuthSessionTicket(ticket.data(), static_cast<int>(ticket.size()), &size, nullptr);
-	ticket.resize(size);
+	if (handle == k_HAuthTicketInvalid) {
+		RET_NULL;
+	}
+
+	ticket.resize(std::min(static_cast<size_t>(size), ticket.size()));
 
 	RET_VALUE(makeAuthSessionTicket(env, handle, ticket.data(), ticket.size()));
 }
@@ -318,6 +322,11 @@ JS_METHOD(requestEncryptedAppTicket) {
 	SteamAPICall_t call = value->RequestEncryptedAppTicket(
 	    userData.empty() ? nullptr : userData.data(), static_cast<int>(userData.size())
 	);
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam encrypted app ticket request could not be sent.");
+		RET_UNDEFINED;
+	}
+
 	RET_VALUE(trackCallResult<EncryptedAppTicketRequest>(env, call, encryptedAppTicketRequests));
 }
 

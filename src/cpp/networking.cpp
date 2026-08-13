@@ -4,6 +4,10 @@
 #include <limits>
 
 namespace steam_api::networking {
+namespace {
+constexpr uint32 kMaxP2PPacketReadSize = 1024 * 1024;
+}
+
 ISteamNetworking *steamNetworking(Napi::Env env) {
 	ISteamNetworking *value = SteamNetworking();
 	if (value == nullptr) {
@@ -92,6 +96,11 @@ JS_METHOD(isP2PPacketAvailable) {
 JS_METHOD(readP2PPacket) {
 	NAPI_ENV;
 	REQ_UINT32_ARG(0, size);
+	if (size > kMaxP2PPacketReadSize) {
+		JS_THROW("size exceeds the maximum Steam P2P packet read size.");
+		RET_UNDEFINED;
+	}
+
 	USE_INT32_ARG(1, channel, 0);
 
 	ISteamNetworking *value = steamNetworking(env);

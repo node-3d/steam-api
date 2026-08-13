@@ -113,6 +113,10 @@ Top-level helpers:
 - `user.getTicketSteamId(decryptedTicket)`
 - `user.getTicketAppId(decryptedTicket)`
 
+`getAuthSessionTicket()` returns `null` when Steam does not issue a valid auth
+ticket handle. Async auth ticket requests fail immediately if Steam refuses to
+start the request.
+
 `utils`:
 
 - `utils.getAppId()`
@@ -210,7 +214,8 @@ call results, so keep pumping callbacks with `steam.runCallbacks()` or
 - `networking.isBehindNat()`
 
 `readP2PPacket()` returns `null` when no packet is available, otherwise
-`{ data, steamIdRemote, messageSize }`.
+`{ data, steamIdRemote, messageSize }`. The requested read size is capped to
+avoid unbounded native allocation.
 
 `cloud`:
 
@@ -384,6 +389,9 @@ console.log(publish.publishedFileId);
 const sync = await waitForSteamCall(ugc.synchronizeItems({ page: 1 }, './workshop'));
 console.log(sync.items.map((item) => [item.path, item.isUpdated]));
 ```
+
+`getSubscribedItems(maxEntries?)` clamps `maxEntries` to Steam's current
+subscribed item count before allocating its result buffer.
 
 `userStats`:
 

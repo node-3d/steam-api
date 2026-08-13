@@ -2005,15 +2005,14 @@ JS_METHOD(getSubscribedItems) {
 		RET_UNDEFINED;
 	}
 
-	uint32 capacity = maxEntries;
-	if (capacity == 0) {
-		capacity = ugc->GetNumSubscribedItems(includeLocallyDisabled);
-	}
+	uint32 subscribedCount = ugc->GetNumSubscribedItems(includeLocallyDisabled);
+	uint32 capacity = maxEntries == 0 ? subscribedCount : std::min(maxEntries, subscribedCount);
 
 	std::vector<PublishedFileId_t> publishedFileIds(capacity);
 	uint32 count = capacity == 0
 	    ? 0
 	    : ugc->GetSubscribedItems(publishedFileIds.data(), capacity, includeLocallyDisabled);
+	count = std::min(count, capacity);
 
 	Napi::Array result = Napi::Array::New(env, count);
 	for (uint32 i = 0; i < count; i++) {

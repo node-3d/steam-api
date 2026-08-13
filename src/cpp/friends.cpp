@@ -1,6 +1,12 @@
 #include "friends.hpp"
 
+#include <algorithm>
+
 namespace steam_api::friends {
+namespace {
+constexpr int32 kMaxFriendMessageSize = 64 * 1024;
+}
+
 ISteamFriends *steamFriends(Napi::Env env) {
 	ISteamFriends *value = SteamFriends();
 	if (value == nullptr) {
@@ -202,6 +208,10 @@ JS_METHOD(getFriendMessage) {
 		JS_THROW("maximumMessageSize must be greater than zero.");
 		RET_UNDEFINED;
 	}
+	if (maximumMessageSize > kMaxFriendMessageSize) {
+		JS_THROW("maximumMessageSize exceeds the maximum Steam friend message size.");
+		RET_UNDEFINED;
+	}
 
 	CSteamID steamId;
 	if (!requireSteamId(env, info, 0, &steamId)) {
@@ -221,8 +231,10 @@ JS_METHOD(getFriendMessage) {
 		RET_NULL;
 	}
 
+	size_t bytesToCopy = std::min(static_cast<size_t>(messageSize), message.size());
+
 	Napi::Object result = JS_OBJECT;
-	result.Set("message", Napi::String::New(env, message.data(), static_cast<size_t>(messageSize)));
+	result.Set("message", Napi::String::New(env, message.data(), bytesToCopy));
 	result.Set("chatEntryType", static_cast<int32_t>(chatEntryType));
 	RET_VALUE(result);
 }

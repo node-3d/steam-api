@@ -218,3 +218,21 @@ test('SteamID helpers validate uint64 decimal strings', { skip: nativeSkip }, as
 		/steamId is outside the uint64 range/u,
 	);
 });
+
+test(
+	'caller-sized native reads are bounded before Steam access',
+	{ skip: nativeSkip },
+	async () => {
+		const steamApi = await loadSteamApi();
+		const steamId = '76561197960287930' as TSteamId;
+
+		assert.throws(
+			() => steamApi.networking.readP2PPacket(1024 * 1024 + 1),
+			/size exceeds the maximum Steam P2P packet read size/u,
+		);
+		assert.throws(
+			() => steamApi.friends.getFriendMessage(steamId, 0, 64 * 1024 + 1),
+			/maximumMessageSize exceeds the maximum Steam friend message size/u,
+		);
+	},
+);

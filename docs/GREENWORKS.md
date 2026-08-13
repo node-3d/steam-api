@@ -528,6 +528,9 @@ const key = Buffer.alloc(EncryptedAppTicketSymmetricKeyLength);
 const decryptedTicket = user.decryptAppTicket(encryptedTicket, key);
 ```
 
+`getAuthSessionTicket()` returns `null` if Steam does not issue a valid auth
+ticket handle. Greenworks users should treat that as the failure callback case.
+
 `beginAuthSessionAsUser()` maps to `user.beginAuthSession(ticket, steamId)`,
 and `endAuthSessionAsUser()` maps to `user.endAuthSession(steamId)`.
 `validate-auth-ticket` is surfaced through `update()` with
@@ -565,6 +568,7 @@ const packet = size > 0 ? networking.readP2PPacket(size) : null;
 ```
 
 `readP2PPacket()` returns `{ data, steamIdRemote, messageSize }` or `null`.
+The read size is capped to avoid unbounded native allocation from caller input.
 `getP2PSessionState()` uses camelCase connection-state fields such as
 `connectionActive`, `sessionError`, `usingRelay`, and `bytesQueuedForSend`.
 Greenworks' `isBehindNAT()` maps to `networking.isBehindNat()`.

@@ -280,6 +280,11 @@ JS_METHOD(getNumberOfCurrentPlayers) {
 	}
 
 	SteamAPICall_t call = value->GetNumberOfCurrentPlayers();
+	if (call == k_uAPICallInvalid) {
+		JS_THROW("Steam current player count request could not be sent.");
+		RET_UNDEFINED;
+	}
+
 	RET_VALUE(trackCallResult<NumberOfCurrentPlayersRequest>(env, call, numberOfCurrentPlayersRequests));
 }
 
