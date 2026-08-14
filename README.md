@@ -1,25 +1,38 @@
-# @node-3d/steam-api
+# Steam API for Node.js
 
 This is a part of [Node3D](https://github.com/node-3d) project.
 
 [![NPM](https://badge.fury.io/js/@node-3d%2Fsteam-api.svg)](https://badge.fury.io/js/@node-3d%2Fsteam-api)
 [![Lint](https://github.com/node-3d/steam-api/actions/workflows/lint.yml/badge.svg)](https://github.com/node-3d/steam-api/actions/workflows/lint.yml)
 [![Test](https://github.com/node-3d/steam-api/actions/workflows/test.yml/badge.svg)](https://github.com/node-3d/steam-api/actions/workflows/test.yml)
+[![Cpplint](https://github.com/node-3d/steam-api/actions/workflows/cpplint.yml/badge.svg)](https://github.com/node-3d/steam-api/actions/workflows/cpplint.yml)
 
-[WIP] Steamworks API bindings for Node.js.
-
-## Install
-
-```bash
+```
 npm install @node-3d/steam-api
 ```
 
+**Node.js** addon with **Steamworks** client API bindings.
 
+* Exposes typed ESM bindings grouped by Steamworks interface.
+* Covers lifecycle, callback pumping, app/user/friends helpers, matchmaking
+  lobbies, P2P packet networking, auth tickets, DLC metadata, image utilities,
+  UGC item helpers, and user stats/achievements.
+* Keeps API names close to Valve's Steamworks interfaces instead of exporting a
+  Greenworks-style flat module.
+* Provides Greenworks migration notes in [docs/GREENWORKS.md](docs/GREENWORKS.md).
+* Includes repository examples for read-only probes, read-write workflows, and
+  a Spacewar AppID 480 Node3D/Core demo.
 
-Published packages include prebuilt native binaries.
-A consumer install doesn't need a compiler or a local Steamworks SDK copy.
+> Note: this **addon uses N-API**, and therefore its Steam API binary is
+ABI-compatible across different Node.js versions. Published packages install
+prebuilt native binaries from this repository's GitHub releases. There is no
+compilation step or local Steamworks SDK requirement during `npm install` when
+matching archives are available.
 
-## Example
+Applications still need the normal Steamworks runtime context: the Steam client
+must be available where the app runs, and development builds launched outside
+Steam need an app id context such as `steam_appid.txt` in the current working
+directory.
 
 ```ts
 import { steam, update, user, utils } from '@node-3d/steam-api';
@@ -38,16 +51,12 @@ for (const event of update()) {
 }
 ```
 
-## API Surface
+## API
 
 Migrating from Greenworks? See [docs/GREENWORKS.md](docs/GREENWORKS.md) for
 capability mappings and migration notes.
 
 Development coverage is tracked in [docs/CHECKLIST.md](docs/CHECKLIST.md).
-
-The initial binding covers lifecycle, callback pumping, app/user/friends
-helpers, matchmaking lobbies, P2P packet networking, auth tickets, DLC metadata,
-image utilities, UGC item helpers, and user stats/achievements.
 
 Methods are grouped by Steamworks interface rather than exported as one flat
 module. This keeps names close to Valve's API documentation and avoids a second
