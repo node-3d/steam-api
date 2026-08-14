@@ -342,6 +342,14 @@ void setEnumExports(Napi::Env env, Napi::Object exports) {
 	        { "RankedByTotalVotesAsc", k_EUGCQuery_RankedByTotalVotesAsc },
 	        { "RankedByVotesUp", k_EUGCQuery_RankedByVotesUp },
 	        { "RankedByTextSearch", k_EUGCQuery_RankedByTextSearch },
+	        { "RankedByTotalUniqueSubscriptions", k_EUGCQuery_RankedByTotalUniqueSubscriptions },
+	        { "RankedByPlaytimeTrend", k_EUGCQuery_RankedByPlaytimeTrend },
+	        { "RankedByTotalPlaytime", k_EUGCQuery_RankedByTotalPlaytime },
+	        { "RankedByAveragePlaytimeTrend", k_EUGCQuery_RankedByAveragePlaytimeTrend },
+	        { "RankedByLifetimeAveragePlaytime", k_EUGCQuery_RankedByLifetimeAveragePlaytime },
+	        { "RankedByPlaytimeSessionsTrend", k_EUGCQuery_RankedByPlaytimeSessionsTrend },
+	        { "RankedByLifetimePlaytimeSessions", k_EUGCQuery_RankedByLifetimePlaytimeSessions },
+	        { "RankedByLastUpdatedDate", k_EUGCQuery_RankedByLastUpdatedDate },
 	    }
 	);
 

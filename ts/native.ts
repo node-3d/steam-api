@@ -103,19 +103,31 @@ export type TSteamUgcItemInstallInfo = Readonly<{
 	timestamp: number;
 }>;
 
+export type TSteamUgcQueryKeyValueTag = Readonly<{
+	key: string;
+	value: string;
+}>;
+
 export type TSteamUgcQueryOptions = Readonly<{
 	appId?: number;
 	page?: number;
 	requiredTags?: string[];
 	excludedTags?: string[];
 	requiredTagGroups?: string[][];
+	requiredKeyValueTags?: TSteamUgcQueryKeyValueTag[];
 	matchAnyTag?: boolean;
+	adminQuery?: boolean;
+	returnOnlyIds?: boolean;
 	returnMetadata?: boolean;
 	returnLongDescription?: boolean;
 	returnAdditionalPreviews?: boolean;
 	returnChildren?: boolean;
 	returnKeyValueTags?: boolean;
+	returnPlaytimeStatsDays?: number;
 	returnTotalOnly?: boolean;
+	cloudFileNameFilter?: string;
+	rankedByTrendDays?: number;
+	searchText?: string;
 	language?: string;
 	allowCachedResponseMaxAgeSeconds?: number;
 }>;
@@ -129,6 +141,13 @@ export type TSteamUgcAdditionalPreview = Readonly<{
 export type TSteamUgcKeyValueTag = Readonly<{
 	key: string;
 	value: string;
+}>;
+
+export type TSteamUgcPlaytimeStats = Readonly<{
+	secondsPlayed: string;
+	playtimeSessions: string;
+	secondsPlayedDuringTimePeriod: string;
+	playtimeSessionsDuringTimePeriod: string;
 }>;
 
 export type TSteamUgcDetails = Readonly<{
@@ -163,6 +182,7 @@ export type TSteamUgcDetails = Readonly<{
 	children?: TSteamPublishedFileId[];
 	additionalPreviews?: TSteamUgcAdditionalPreview[];
 	keyValueTags?: TSteamUgcKeyValueTag[];
+	playtimeStats?: TSteamUgcPlaytimeStats;
 }>;
 
 export type TSteamUgcQueryResult = Readonly<{
@@ -549,6 +569,14 @@ export type TSteamUgcQueryType = TSteamEnum<
 	| 'RankedByTotalVotesAsc'
 	| 'RankedByVotesUp'
 	| 'RankedByTextSearch'
+	| 'RankedByTotalUniqueSubscriptions'
+	| 'RankedByPlaytimeTrend'
+	| 'RankedByTotalPlaytime'
+	| 'RankedByAveragePlaytimeTrend'
+	| 'RankedByLifetimeAveragePlaytime'
+	| 'RankedByPlaytimeSessionsTrend'
+	| 'RankedByLifetimePlaytimeSessions'
+	| 'RankedByLastUpdatedDate'
 >;
 
 export type TSteamUserUgcList = TSteamEnum<

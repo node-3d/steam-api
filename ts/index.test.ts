@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getBin } from '@node-3d/addon-tools';
-import type { TSteamId } from './index.ts';
+import type { TSteamId, TSteamUgcDetails, TSteamUgcQueryOptions } from './index.ts';
 
 const nativeBinaryPath = join(import.meta.dirname, '..', getBin(), 'steam-api.node');
 const nativeSkip = existsSync(nativeBinaryPath) ? false : 'native binary is not built';
@@ -139,6 +139,14 @@ test(
 		assert.equal(typeof steamApi.WorkshopFileType.Community, 'number');
 		assert.equal(typeof steamApi.RemoteStoragePublishedFileVisibility.Public, 'number');
 		assert.equal(typeof steamApi.UGCItemState.DisabledLocally, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByTotalUniqueSubscriptions, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByPlaytimeTrend, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByTotalPlaytime, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByAveragePlaytimeTrend, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByLifetimeAveragePlaytime, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByPlaytimeSessionsTrend, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByLifetimePlaytimeSessions, 'number');
+		assert.equal(typeof steamApi.UGCQueryType.RankedByLastUpdatedDate, 'number');
 		assert.equal(typeof steamApi.EncryptedAppTicketSymmetricKeyLength, 'number');
 		assert.equal(typeof steamApi.user.getAuthSessionTicket, 'function');
 		assert.equal(typeof steamApi.user.getAuthTicketForWebApi, 'function');
@@ -155,6 +163,31 @@ test(
 		assert.equal(typeof steamApi.userStats.getNumberOfCurrentPlayers, 'function');
 	},
 );
+
+const ugcQueryOptionsTypeCheck = {
+	adminQuery: true,
+	cloudFileNameFilter: 'cloud-file.dat',
+	rankedByTrendDays: 7,
+	requiredKeyValueTags: [{ key: 'mode', value: 'survival' }],
+	returnOnlyIds: true,
+	returnPlaytimeStatsDays: 30,
+	searchText: 'spacewar',
+} satisfies TSteamUgcQueryOptions;
+
+const ugcDetailsTypeCheck = {
+	playtimeStats: {
+		playtimeSessions: '2',
+		playtimeSessionsDuringTimePeriod: '1',
+		secondsPlayed: '120',
+		secondsPlayedDuringTimePeriod: '60',
+	},
+} satisfies Partial<TSteamUgcDetails>;
+
+test('UGC query option typings cover Steam query customizers', () => {
+	assert.equal(ugcQueryOptionsTypeCheck.searchText, 'spacewar');
+	assert.equal(ugcQueryOptionsTypeCheck.requiredKeyValueTags[0]?.key, 'mode');
+	assert.equal(ugcDetailsTypeCheck.playtimeStats?.secondsPlayed, '120');
+});
 
 test('Steam lifecycle methods are safe without a Steam session', { skip: nativeSkip }, async () => {
 	const steamApi = await loadSteamApi();

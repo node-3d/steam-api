@@ -77,6 +77,8 @@ export type {
 	TSteamUgcItemUpdateProgress,
 	TSteamUgcKeyValueTag,
 	TSteamUgcMatchingType,
+	TSteamUgcPlaytimeStats,
+	TSteamUgcQueryKeyValueTag,
 	TSteamUgcQueryOptions,
 	TSteamUgcQueryResult,
 	TSteamUgcQueryType,

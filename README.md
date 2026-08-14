@@ -277,15 +277,26 @@ avoid unbounded native allocation.
 - `ugc.getItemState(publishedFileId)`
 - `ugc.getItemInstallInfo(publishedFileId)`
 
+Steamworks UGC query handles are modeled as one-shot async calls. The addon does
+not expose `UGCQueryHandle_t`; `ugc.getItems()` wraps
+`CreateQueryAllUGCRequest()`, query setters, `SendQueryUGCRequest()`, result
+reads, and `ReleaseQueryUGCRequest()`. `ugc.getUserItems()` does the same for
+`CreateQueryUserUGCRequest()`. Use the `options` object for Steam query setters
+such as `SetSearchText()`, `SetReturnMetadata()`, `SetLanguage()`, and
+`AddRequiredTag()`. Update handles remain explicit because Workshop item updates
+are a multi-step workflow before `submitItemUpdate()`.
+
 UGC promises resolve from Steam call results. Continue pumping callbacks with
 `steam.runCallbacks()` or `update()` while a UGC promise is pending.
 `downloadItem()` maps to `ISteamUGC::DownloadItem`, returns `boolean`, and
 reports completion through the `download-item-result` callback event:
 
 `getItems()` and `getUserItems()` query options map to Steam's query setter
-methods. `requiredTags`, `requiredTagGroups`, `excludedTags`, return toggles,
-`language`, and `allowCachedResponseMaxAgeSeconds` are applied before
-`SendQueryUGCRequest()`. `matchAnyTag` is only valid for `getItems()`.
+methods. Tag filters, required key-value tags, return toggles, playtime stats,
+text search, trend windows, language, and cache age are applied before
+`SendQueryUGCRequest()`. `matchAnyTag`, `searchText`, and `rankedByTrendDays`
+are only valid for `getItems()`; `cloudFileNameFilter` is only valid for
+`getUserItems()`.
 
 ```ts
 import {
@@ -323,17 +334,20 @@ const queryResult = await waitForSteamCall(
 			page: 1,
 			requiredTags: ['level'],
 			requiredTagGroups: [['challenge', 'puzzle']],
+			requiredKeyValueTags: [{ key: 'mode', value: 'survival' }],
 			excludedTags: ['spoiler'],
 			matchAnyTag: false,
+			searchText: 'spacewar',
 			returnMetadata: true,
 			returnAdditionalPreviews: true,
 			returnChildren: true,
 			returnKeyValueTags: true,
+			returnPlaytimeStatsDays: 30,
 			language: 'english',
 			allowCachedResponseMaxAgeSeconds: 60,
 		},
 		UGCMatchingType.Items,
-		UGCQueryType.RankedByPublicationDate,
+		UGCQueryType.RankedByTextSearch,
 	),
 );
 if (queryResult.items.length === 0) {

@@ -17,14 +17,24 @@ struct Tags {
 	std::vector<const char *> pointers;
 };
 
+struct KeyValueTag {
+	std::string key;
+	std::string value;
+};
+
 struct QueryOptions {
 	uint32 appId;
 	uint32 page;
 	std::vector<std::string> requiredTags;
 	std::vector<std::string> excludedTags;
 	std::vector<Tags> requiredTagGroups;
+	std::vector<KeyValueTag> requiredKeyValueTags;
 	bool hasMatchAnyTag = false;
 	bool matchAnyTag = false;
+	bool hasAdminQuery = false;
+	bool adminQuery = false;
+	bool hasReturnOnlyIds = false;
+	bool returnOnlyIds = false;
 	bool hasReturnMetadata = false;
 	bool returnMetadata = false;
 	bool hasReturnLongDescription = false;
@@ -35,8 +45,14 @@ struct QueryOptions {
 	bool returnChildren = false;
 	bool hasReturnKeyValueTags = false;
 	bool returnKeyValueTags = false;
+	bool hasReturnPlaytimeStats = false;
+	uint32 returnPlaytimeStatsDays = 0;
 	bool hasReturnTotalOnly = false;
 	bool returnTotalOnly = false;
+	std::string cloudFileNameFilter;
+	bool hasRankedByTrendDays = false;
+	uint32 rankedByTrendDays = 0;
+	std::string searchText;
 	std::string language;
 	bool hasAllowCachedResponse = false;
 	uint32 allowCachedResponseMaxAgeSeconds = 0;
@@ -268,6 +284,49 @@ bool readOptionalStringProperty(Napi::Env env, Napi::Object object, const char *
 	return true;
 }
 
+bool readOptionalKeyValueTagsProperty(
+    Napi::Env env, Napi::Object object, const char *name, std::vector<KeyValueTag> *target
+) {
+	Napi::Value value = object.Get(name);
+	if (value.IsNull() || value.IsUndefined()) {
+		target->clear();
+		return true;
+	}
+
+	if (!value.IsArray()) {
+		JS_THROW(std::string(name) + " must be an array of key-value tag objects.");
+		return false;
+	}
+
+	Napi::Array array = value.As<Napi::Array>();
+	target->clear();
+	target->reserve(array.Length());
+
+	for (uint32 i = 0; i < array.Length(); i++) {
+		Napi::Value item = array.Get(i);
+		if (!item.IsObject()) {
+			JS_THROW(std::string(name) + " must contain only key-value tag objects.");
+			return false;
+		}
+
+		Napi::Object tag = item.As<Napi::Object>();
+		Napi::Value key = tag.Get("key");
+		Napi::Value tagValue = tag.Get("value");
+		if (!key.IsString()) {
+			JS_THROW(std::string(name) + " entries must include a string key.");
+			return false;
+		}
+		if (!tagValue.IsString()) {
+			JS_THROW(std::string(name) + " entries must include a string value.");
+			return false;
+		}
+
+		target->push_back({ key.As<Napi::String>().Utf8Value(), tagValue.As<Napi::String>().Utf8Value() });
+	}
+
+	return true;
+}
+
 bool readQueryOptions(Napi::Env env, Napi::Value value, QueryOptions *options) {
 	ISteamUtils *utils = steamUtils(env);
 	if (env.IsExceptionPending()) {
@@ -292,8 +351,17 @@ bool readQueryOptions(Napi::Env env, Napi::Value value, QueryOptions *options) {
 	    readOptionalStringArrayProperty(env, object, "requiredTags", &options->requiredTags) &&
 	    readOptionalStringArrayProperty(env, object, "excludedTags", &options->excludedTags) &&
 	    readOptionalTagGroupsProperty(env, object, "requiredTagGroups", &options->requiredTagGroups) &&
+	    readOptionalKeyValueTagsProperty(
+	           env, object, "requiredKeyValueTags", &options->requiredKeyValueTags
+	    ) &&
 	    readOptionalBoolProperty(
 	           env, object, "matchAnyTag", false, &options->matchAnyTag, &options->hasMatchAnyTag
+	    ) &&
+	    readOptionalBoolProperty(
+	           env, object, "adminQuery", false, &options->adminQuery, &options->hasAdminQuery
+	    ) &&
+	    readOptionalBoolProperty(
+	           env, object, "returnOnlyIds", false, &options->returnOnlyIds, &options->hasReturnOnlyIds
 	    ) &&
 	    readOptionalBoolProperty(
 	           env, object, "returnMetadata", false, &options->returnMetadata, &options->hasReturnMetadata
@@ -325,9 +393,29 @@ bool readQueryOptions(Napi::Env env, Napi::Value value, QueryOptions *options) {
 	           &options->returnKeyValueTags,
 	           &options->hasReturnKeyValueTags
 	    ) &&
+	    readOptionalUint32Property(
+	           env,
+	           object,
+	           "returnPlaytimeStatsDays",
+	           nullptr,
+	           0,
+	           &options->returnPlaytimeStatsDays,
+	           &options->hasReturnPlaytimeStats
+	    ) &&
 	    readOptionalBoolProperty(
 	           env, object, "returnTotalOnly", false, &options->returnTotalOnly, &options->hasReturnTotalOnly
 	    ) &&
+	    readOptionalStringProperty(env, object, "cloudFileNameFilter", &options->cloudFileNameFilter) &&
+	    readOptionalUint32Property(
+	           env,
+	           object,
+	           "rankedByTrendDays",
+	           nullptr,
+	           0,
+	           &options->rankedByTrendDays,
+	           &options->hasRankedByTrendDays
+	    ) &&
+	    readOptionalStringProperty(env, object, "searchText", &options->searchText) &&
 	    readOptionalStringProperty(env, object, "language", &options->language) &&
 	    readOptionalUint32Property(
 	           env,
@@ -367,6 +455,13 @@ bool applyQueryOptions(
 		}
 	}
 
+	for (const KeyValueTag &tag : options.requiredKeyValueTags) {
+		if (!ugc->AddRequiredKeyValueTag(queryHandle, tag.key.c_str(), tag.value.c_str())) {
+			JS_THROW("Steam UGC query required key-value tag could not be set.");
+			return false;
+		}
+	}
+
 	if (options.hasMatchAnyTag) {
 		if (!isAllUgcQuery) {
 			JS_THROW("matchAnyTag is only supported by ugc.getItems().");
@@ -376,6 +471,16 @@ bool applyQueryOptions(
 			JS_THROW("Steam UGC query match-any-tag option could not be set.");
 			return false;
 		}
+	}
+
+	if (options.hasAdminQuery && !ugc->SetAdminQuery(queryHandle, options.adminQuery)) {
+		JS_THROW("Steam UGC query admin option could not be set.");
+		return false;
+	}
+
+	if (options.hasReturnOnlyIds && !ugc->SetReturnOnlyIDs(queryHandle, options.returnOnlyIds)) {
+		JS_THROW("Steam UGC query return-only-ids option could not be set.");
+		return false;
 	}
 
 	if (options.hasReturnMetadata && !ugc->SetReturnMetadata(queryHandle, options.returnMetadata)) {
@@ -406,9 +511,57 @@ bool applyQueryOptions(
 		return false;
 	}
 
+	if (options.hasReturnPlaytimeStats) {
+		if (options.returnPlaytimeStatsDays == 0) {
+			JS_THROW("returnPlaytimeStatsDays must be greater than 0.");
+			return false;
+		}
+		if (!ugc->SetReturnPlaytimeStats(queryHandle, options.returnPlaytimeStatsDays)) {
+			JS_THROW("Steam UGC query playtime-stats return option could not be set.");
+			return false;
+		}
+	}
+
 	if (options.hasReturnTotalOnly && !ugc->SetReturnTotalOnly(queryHandle, options.returnTotalOnly)) {
 		JS_THROW("Steam UGC query total-only return option could not be set.");
 		return false;
+	}
+
+	if (!options.cloudFileNameFilter.empty()) {
+		if (isAllUgcQuery) {
+			JS_THROW("cloudFileNameFilter is only supported by ugc.getUserItems().");
+			return false;
+		}
+		if (!ugc->SetCloudFileNameFilter(queryHandle, options.cloudFileNameFilter.c_str())) {
+			JS_THROW("Steam UGC query cloud-file-name filter could not be set.");
+			return false;
+		}
+	}
+
+	if (options.hasRankedByTrendDays) {
+		if (!isAllUgcQuery) {
+			JS_THROW("rankedByTrendDays is only supported by ugc.getItems().");
+			return false;
+		}
+		if (options.rankedByTrendDays < 1 || options.rankedByTrendDays > 365) {
+			JS_THROW("rankedByTrendDays must be between 1 and 365.");
+			return false;
+		}
+		if (!ugc->SetRankedByTrendDays(queryHandle, options.rankedByTrendDays)) {
+			JS_THROW("Steam UGC query ranked-by-trend-days option could not be set.");
+			return false;
+		}
+	}
+
+	if (!options.searchText.empty()) {
+		if (!isAllUgcQuery) {
+			JS_THROW("searchText is only supported by ugc.getItems().");
+			return false;
+		}
+		if (!ugc->SetSearchText(queryHandle, options.searchText.c_str())) {
+			JS_THROW("Steam UGC query search text could not be set.");
+			return false;
+		}
 	}
 
 	if (!options.language.empty() && !ugc->SetLanguage(queryHandle, options.language.c_str())) {
@@ -774,6 +927,44 @@ bool addQueryReturnFields(
 			value.Set(i, tag);
 		}
 		result.Set("keyValueTags", value);
+	}
+
+	if (options.hasReturnPlaytimeStats) {
+		uint64 secondsPlayed = 0;
+		uint64 playtimeSessions = 0;
+		uint64 secondsPlayedDuringTimePeriod = 0;
+		uint64 playtimeSessionsDuringTimePeriod = 0;
+
+		if (!ugc->GetQueryUGCStatistic(
+		        queryHandle, index, k_EItemStatistic_NumSecondsPlayed, &secondsPlayed
+		    ) ||
+		    !ugc->GetQueryUGCStatistic(
+		        queryHandle, index, k_EItemStatistic_NumPlaytimeSessions, &playtimeSessions
+		    ) ||
+		    !ugc->GetQueryUGCStatistic(
+		        queryHandle,
+		        index,
+		        k_EItemStatistic_NumSecondsPlayedDuringTimePeriod,
+		        &secondsPlayedDuringTimePeriod
+		    ) ||
+		    !ugc->GetQueryUGCStatistic(
+		        queryHandle,
+		        index,
+		        k_EItemStatistic_NumPlaytimeSessionsDuringTimePeriod,
+		        &playtimeSessionsDuringTimePeriod
+		    )) {
+			*error = "Steam UGC query playtime stats could not be read.";
+			return false;
+		}
+
+		Napi::Object value = JS_OBJECT;
+		value.Set("secondsPlayed", jsStringFromUint64(env, secondsPlayed));
+		value.Set("playtimeSessions", jsStringFromUint64(env, playtimeSessions));
+		value.Set("secondsPlayedDuringTimePeriod", jsStringFromUint64(env, secondsPlayedDuringTimePeriod));
+		value.Set(
+		    "playtimeSessionsDuringTimePeriod", jsStringFromUint64(env, playtimeSessionsDuringTimePeriod)
+		);
+		result.Set("playtimeStats", value);
 	}
 
 	return true;
