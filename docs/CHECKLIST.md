@@ -47,15 +47,23 @@ interactions.
 - [x] `ISteamUGC::AddRequiredTag`
 - [x] `ISteamUGC::AddExcludedTag`
 - [x] `ISteamUGC::AddRequiredTagGroup`
+- [x] `ISteamUGC::AddRequiredKeyValueTag`
 - [x] `ISteamUGC::SetMatchAnyTag`
+- [x] `ISteamUGC::SetAdminQuery`
+- [x] `ISteamUGC::SetReturnOnlyIDs`
 - [x] `ISteamUGC::SetReturnMetadata`
 - [x] `ISteamUGC::SetReturnLongDescription`
 - [x] `ISteamUGC::SetReturnAdditionalPreviews`
 - [x] `ISteamUGC::SetReturnChildren`
 - [x] `ISteamUGC::SetReturnKeyValueTags`
+- [x] `ISteamUGC::SetReturnPlaytimeStats`
 - [x] `ISteamUGC::SetReturnTotalOnly`
+- [x] `ISteamUGC::SetCloudFileNameFilter`
+- [x] `ISteamUGC::SetRankedByTrendDays`
+- [x] `ISteamUGC::SetSearchText`
 - [x] `ISteamUGC::SetLanguage`
 - [x] `ISteamUGC::SetAllowCachedResponse`
+- [x] `ISteamUGC::GetQueryUGCStatistic`
 
 ### Existing Legacy and Greenworks-Oriented UGC
 
