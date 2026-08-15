@@ -1,23 +1,12 @@
 # Contributing to Steam API
 
-`@node-3d/steam-api` initially targeted capability parity with the Greenworks
-implementation vendored under `.tmp/greenworks`, not drop-in API compatibility.
-That milestone is complete. Current Steamworks coverage work is tracked in
-`docs/CHECKLIST.md`.
+## Maintainer Docs
 
-A Greenworks item is covered when an application can achieve the same outcome
-with `@node-3d/steam-api`, even if the Node3D API uses different names, grouped
-namespaces, direct return values, typed result objects, promises, or explicit
-callback polling.
-
-## Greenworks Audit Sources
-
-- `.tmp/greenworks/greenworks.js`
-- `.tmp/greenworks/src/api/*.cc`
-- `.tmp/greenworks/src/steam_id.*`
-- `.tmp/greenworks/docs/*.md`
-- Current `@node-3d/steam-api` public surface in `ts/index.ts`, `ts/native.ts`,
-  and `src/cpp/*.cpp`
+- Use `docs/SDK.md` when adding or updating the private Steamworks SDK input.
+- Use `docs/BUILD.md` for local and CI build behavior, platform targets, and
+  Steamworks SDK cache details.
+- Keep Greenworks migration mappings in `docs/GREENWORKS.md`.
+- Keep Steamworks coverage and current milestone status in `docs/CHECKLIST.md`.
 
 ## API Shape
 
@@ -26,8 +15,6 @@ callback polling.
 - Prefer grouped namespaces such as `steam`, `callbacks`, `user`, `utils`,
   `apps`, and `userStats` over a flat Greenworks-style module.
 - Public method names should follow the actual Steamworks method being bound.
-- Keep Greenworks migration mappings in `docs/GREENWORKS.md`.
-- Keep Steamworks coverage and current milestone status in `docs/CHECKLIST.md`.
 - Do not add a drop-in Greenworks facade unless the package direction changes
   explicitly.
 - For each Greenworks callback-style API, decide whether the Node3D outcome is

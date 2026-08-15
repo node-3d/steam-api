@@ -3,6 +3,9 @@
 The Steamworks SDK is not committed and is not shipped in the npm package.
 This follows the Node3D private third-party build input policy recorded in
 [ADR 0014](../../../docs/adr/0014-private-third-party-build-inputs.md).
+See [SDK.md](SDK.md) for the maintainer steps to create or update the private
+`steamworks-sdk.gz` archive.
+
 Maintainer builds expect an unpacked SDK at:
 
 ```text
