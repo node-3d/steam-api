@@ -138,6 +138,8 @@ start the request.
 - `utils.isOverlayEnabled()`
 - `utils.isSteamInBigPictureMode()`
 - `utils.isSteamRunningOnSteamDeck()`
+- `utils.isRunningOnSteamHardware()`
+- `utils.getSteamHardwareDefaultConfig()`
 - `utils.showFloatingGamepadTextInput(keyboardMode, x, y, width, height)`
 - `utils.dismissFloatingGamepadTextInput()`
 

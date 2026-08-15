@@ -659,6 +659,12 @@ export type TSteamFloatingGamepadTextInputMode = TSteamEnum<
 	'SingleLine' | 'MultipleLines' | 'Email' | 'Numeric'
 >;
 
+export type TSteamHardwareType = TSteamEnum<'None' | 'SteamDeck' | 'SteamMachine' | 'SteamFrame'>;
+
+export type TSteamHardwareDefaultConfig = TSteamEnum<
+	'None' | 'Low' | 'Medium' | 'High' | 'Max' | 'SteamDeck' | 'SteamMachine' | 'SteamFrame'
+>;
+
 export type TSteamP2PSendType = TSteamEnum<
 	'Unreliable' | 'UnreliableNoDelay' | 'Reliable' | 'ReliableWithBuffering'
 >;
@@ -881,6 +887,8 @@ export type TSteamUtilsNamespace = Readonly<{
 	isOverlayEnabled: () => boolean;
 	isSteamInBigPictureMode: () => boolean;
 	isSteamRunningOnSteamDeck: () => boolean;
+	isRunningOnSteamHardware: () => number;
+	getSteamHardwareDefaultConfig: () => number;
 	showFloatingGamepadTextInput: (
 		keyboardMode: number,
 		x: number,
@@ -1150,6 +1158,8 @@ type TNativeEnums = Readonly<{
 	RemoteStoragePublishedFileVisibility: TSteamRemoteStoragePublishedFileVisibility;
 	WorkshopFileType: TSteamWorkshopFileType;
 	FloatingGamepadTextInputMode: TSteamFloatingGamepadTextInputMode;
+	SteamHardwareType: TSteamHardwareType;
+	SteamHardwareDefaultConfig: TSteamHardwareDefaultConfig;
 	P2PSendType: TSteamP2PSendType;
 	BeginAuthSessionResult: TSteamBeginAuthSessionResult;
 	AuthSessionResponse: TSteamAuthSessionResponse;

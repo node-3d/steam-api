@@ -13,6 +13,8 @@ JS_METHOD(getImageRgba);
 JS_METHOD(isOverlayEnabled);
 JS_METHOD(isSteamInBigPictureMode);
 JS_METHOD(isSteamRunningOnSteamDeck);
+JS_METHOD(isRunningOnSteamHardware);
+JS_METHOD(getSteamHardwareDefaultConfig);
 JS_METHOD(showFloatingGamepadTextInput);
 JS_METHOD(dismissFloatingGamepadTextInput);
 

@@ -482,6 +482,34 @@ void setEnumExports(Napi::Env env, Napi::Object exports) {
 	setEnum(
 	    env,
 	    exports,
+	    "SteamHardwareType",
+	    {
+	        { "None", k_ESteamHardwareTypeNone },
+	        { "SteamDeck", k_ESteamHardwareTypeSteamDeck },
+	        { "SteamMachine", k_ESteamHardwareTypeSteamMachine },
+	        { "SteamFrame", k_ESteamHardwareTypeSteamFrame },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
+	    "SteamHardwareDefaultConfig",
+	    {
+	        { "None", k_ESteamHardwareDefaultConfigNone },
+	        { "Low", k_ESteamHardwareDefaultConfigLow },
+	        { "Medium", k_ESteamHardwareDefaultConfigMedium },
+	        { "High", k_ESteamHardwareDefaultConfigHigh },
+	        { "Max", k_ESteamHardwareDefaultConfigMax },
+	        { "SteamDeck", k_ESteamHardwareDefaultConfigSteamDeck },
+	        { "SteamMachine", k_ESteamHardwareDefaultConfigSteamMachine },
+	        { "SteamFrame", k_ESteamHardwareDefaultConfigSteamFrame },
+	    }
+	);
+
+	setEnum(
+	    env,
+	    exports,
 	    "P2PSendType",
 	    {
 	        { "Unreliable", k_EP2PSendUnreliable },

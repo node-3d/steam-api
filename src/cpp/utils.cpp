@@ -130,7 +130,25 @@ JS_METHOD(isSteamRunningOnSteamDeck) {
 	if (env.IsExceptionPending()) {
 		RET_UNDEFINED;
 	}
-	RET_BOOL(value->IsSteamRunningOnSteamDeck());
+	RET_BOOL(value->IsRunningOnSteamHardware() == k_ESteamHardwareTypeSteamDeck);
+}
+
+JS_METHOD(isRunningOnSteamHardware) {
+	NAPI_ENV;
+	ISteamUtils *value = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	RET_NUM(value->IsRunningOnSteamHardware());
+}
+
+JS_METHOD(getSteamHardwareDefaultConfig) {
+	NAPI_ENV;
+	ISteamUtils *value = steamUtils(env);
+	if (env.IsExceptionPending()) {
+		RET_UNDEFINED;
+	}
+	RET_NUM(value->GetSteamHardwareDefaultConfig());
 }
 
 JS_METHOD(showFloatingGamepadTextInput) {
@@ -172,6 +190,8 @@ Napi::Object createNamespace(Napi::Env env) {
 	value.Set("isOverlayEnabled", Napi::Function::New(env, isOverlayEnabled));
 	value.Set("isSteamInBigPictureMode", Napi::Function::New(env, isSteamInBigPictureMode));
 	value.Set("isSteamRunningOnSteamDeck", Napi::Function::New(env, isSteamRunningOnSteamDeck));
+	value.Set("isRunningOnSteamHardware", Napi::Function::New(env, isRunningOnSteamHardware));
+	value.Set("getSteamHardwareDefaultConfig", Napi::Function::New(env, getSteamHardwareDefaultConfig));
 	value.Set("showFloatingGamepadTextInput", Napi::Function::New(env, showFloatingGamepadTextInput));
 	value.Set("dismissFloatingGamepadTextInput", Napi::Function::New(env, dismissFloatingGamepadTextInput));
 	return value;
