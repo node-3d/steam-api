@@ -111,6 +111,10 @@ export type TSteamUgcQueryKeyValueTag = Readonly<{
 export type TSteamUgcQueryOptions = Readonly<{
 	appId?: number;
 	page?: number;
+	/** Deep-pagination cursor for getItems(); cannot be combined with page. */
+	cursor?: string;
+	/** Steam user ID for getUserItems(); defaults to the current user. */
+	userId?: TSteamId;
 	requiredTags?: string[];
 	excludedTags?: string[];
 	requiredTagGroups?: string[][];
@@ -249,6 +253,12 @@ export type TSteamUgcFavoriteItemsListChangedResult = Readonly<{
 	result: number;
 	publishedFileId: TSteamPublishedFileId;
 	wasAddRequest: boolean;
+}>;
+
+export type TSteamUgcDependencyResult = Readonly<{
+	result: number;
+	publishedFileId: TSteamPublishedFileId;
+	childPublishedFileId: TSteamPublishedFileId;
 }>;
 
 export type TSteamUgcUnsubscribeResult = Readonly<{
@@ -1010,6 +1020,10 @@ export type TSteamNativeUgcNamespace = Readonly<{
 		sortOrder: number,
 		list: number,
 	) => Promise<TSteamUgcQueryResult>;
+	getItemsByIds: (
+		options: TSteamUgcQueryOptions | null | undefined,
+		publishedFileIds: TSteamPublishedFileId[],
+	) => Promise<TSteamUgcQueryResult>;
 	createItem: (appId?: number, fileType?: number) => Promise<TSteamUgcCreateItemResult>;
 	startItemUpdate: (
 		appId: number,
@@ -1023,6 +1037,13 @@ export type TSteamNativeUgcNamespace = Readonly<{
 		updateHandle: TSteamUgcUpdateHandle,
 		tags: string[],
 		allowAdminTags?: boolean,
+	) => boolean;
+	removeAllItemKeyValueTags: (updateHandle: TSteamUgcUpdateHandle) => boolean;
+	removeItemKeyValueTags: (updateHandle: TSteamUgcUpdateHandle, key: string) => boolean;
+	addItemKeyValueTag: (
+		updateHandle: TSteamUgcUpdateHandle,
+		key: string,
+		value: string,
 	) => boolean;
 	setItemContent: (updateHandle: TSteamUgcUpdateHandle, contentFolder: string) => boolean;
 	setItemPreview: (updateHandle: TSteamUgcUpdateHandle, previewFile: string) => boolean;
@@ -1046,6 +1067,14 @@ export type TSteamNativeUgcNamespace = Readonly<{
 		publishedFileId: TSteamPublishedFileId,
 		appId?: number,
 	) => Promise<TSteamUgcFavoriteItemsListChangedResult>;
+	addDependency: (
+		publishedFileId: TSteamPublishedFileId,
+		childPublishedFileId: TSteamPublishedFileId,
+	) => Promise<TSteamUgcDependencyResult>;
+	removeDependency: (
+		publishedFileId: TSteamPublishedFileId,
+		childPublishedFileId: TSteamPublishedFileId,
+	) => Promise<TSteamUgcDependencyResult>;
 	subscribeItem: (
 		publishedFileId: TSteamPublishedFileId,
 	) => Promise<TSteamUgcSubscribeItemResult>;

@@ -246,6 +246,7 @@ avoid unbounded native allocation.
 - `ugc.showOverlay(publishedFileId?)`
 - `ugc.getItems(options, matchingType, queryType)`
 - `ugc.getUserItems(options, matchingType, sortOrder, list)`
+- `ugc.getItemsByIds(options, publishedFileIds)`
 - `ugc.createItem(appId?, fileType?)`
 - `ugc.startItemUpdate(appId, publishedFileId)`
 - `ugc.setItemTitle(updateHandle, title)`
@@ -253,6 +254,9 @@ avoid unbounded native allocation.
 - `ugc.setItemMetadata(updateHandle, metadata)`
 - `ugc.setItemVisibility(updateHandle, visibility)`
 - `ugc.setItemTags(updateHandle, tags, allowAdminTags?)`
+- `ugc.removeAllItemKeyValueTags(updateHandle)`
+- `ugc.removeItemKeyValueTags(updateHandle, key)`
+- `ugc.addItemKeyValueTag(updateHandle, key, value)`
 - `ugc.setItemContent(updateHandle, contentFolder)`
 - `ugc.setItemPreview(updateHandle, previewFile)`
 - `ugc.submitItemUpdate(updateHandle, changeNote?)`
@@ -261,6 +265,8 @@ avoid unbounded native allocation.
 - `ugc.getUserItemVote(publishedFileId)`
 - `ugc.addItemToFavorites(publishedFileId, appId?)`
 - `ugc.removeItemFromFavorites(publishedFileId, appId?)`
+- `ugc.addDependency(publishedFileId, childPublishedFileId)`
+- `ugc.removeDependency(publishedFileId, childPublishedFileId)`
 - `ugc.subscribeItem(publishedFileId)`
 - `ugc.unsubscribeItem(publishedFileId)`
 - `ugc.getNumSubscribedItems(includeLocallyDisabled?)`
@@ -283,22 +289,28 @@ Steamworks UGC query handles are modeled as one-shot async calls. The addon does
 not expose `UGCQueryHandle_t`; `ugc.getItems()` wraps
 `CreateQueryAllUGCRequest()`, query setters, `SendQueryUGCRequest()`, result
 reads, and `ReleaseQueryUGCRequest()`. `ugc.getUserItems()` does the same for
-`CreateQueryUserUGCRequest()`. Use the `options` object for Steam query setters
-such as `SetSearchText()`, `SetReturnMetadata()`, `SetLanguage()`, and
-`AddRequiredTag()`. Update handles remain explicit because Workshop item updates
-are a multi-step workflow before `submitItemUpdate()`.
+`CreateQueryUserUGCRequest()`; set `options.userId` to query another public
+user, or omit it to use the current user. `ugc.getItemsByIds()` wraps
+`CreateQueryUGCDetailsRequest()` for known published file IDs. Use the `options`
+object for query creation and Steam query setters such as `SetReturnMetadata()`,
+`SetLanguage()`, and `AddRequiredTag()`. Update handles remain explicit because
+Workshop item updates are a multi-step workflow before `submitItemUpdate()`;
+key-value tag changes are staged on that handle too.
 
 UGC promises resolve from Steam call results. Continue pumping callbacks with
 `steam.runCallbacks()` or `update()` while a UGC promise is pending.
 `downloadItem()` maps to `ISteamUGC::DownloadItem`, returns `boolean`, and
 reports completion through the `download-item-result` callback event:
 
-`getItems()` and `getUserItems()` query options map to Steam's query setter
+`getItems()`, `getUserItems()`, and `getItemsByIds()` query options map to Steam's query setter
 methods. Tag filters, required key-value tags, return toggles, playtime stats,
 text search, trend windows, language, and cache age are applied before
-`SendQueryUGCRequest()`. `matchAnyTag`, `searchText`, and `rankedByTrendDays`
-are only valid for `getItems()`; `cloudFileNameFilter` is only valid for
-`getUserItems()`.
+`SendQueryUGCRequest()`. `userId` is used only by `getUserItems()`.
+`matchAnyTag`, `searchText`, and `rankedByTrendDays` are only valid for
+`getItems()`; `cloudFileNameFilter` is only valid for `getUserItems()`.
+`getItems()` also accepts a deep-pagination `cursor`, which cannot be combined
+with `page`. Pass the prior result's non-empty `nextCursor` to obtain the next
+page; cursor pagination is not available for user or ID-detail queries.
 
 ```ts
 import {

@@ -1,7 +1,7 @@
 {
 	"author": "Luis Blanco <luisblanco1337@gmail.com>",
 	"name": "@node-3d/steam-api",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Steamworks API bindings for Node.js",
 	"license": "MIT",
 	"main": "dist/index.js",

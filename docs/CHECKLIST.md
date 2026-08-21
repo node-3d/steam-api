@@ -69,8 +69,14 @@ interactions.
 
 - [x] `ISteamUGC::CreateQueryAllUGCRequest`
 - [x] `ISteamUGC::CreateQueryUserUGCRequest`
+- [x] `ISteamUGC::CreateQueryUGCDetailsRequest`
 - [x] `ISteamUGC::SendQueryUGCRequest`
 - [x] `ISteamUGC::GetQueryUGCResult`
+- [x] `ISteamUGC::RemoveAllItemKeyValueTags`
+- [x] `ISteamUGC::RemoveItemKeyValueTags`
+- [x] `ISteamUGC::AddItemKeyValueTag`
+- [x] `ISteamUGC::AddDependency`
+- [x] `ISteamUGC::RemoveDependency`
 - [x] `ISteamUGC::ReleaseQueryUGCRequest`
 - [x] `ISteamRemoteStorage::FileShare`
 - [x] `ISteamRemoteStorage::PublishWorkshopFile`

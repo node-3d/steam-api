@@ -68,6 +68,7 @@ export type {
 	TSteamUgcAdditionalPreview,
 	TSteamUgcCreateItemResult,
 	TSteamUgcDetails,
+	TSteamUgcDependencyResult,
 	TSteamUgcDownloadResult,
 	TSteamUgcFavoriteItemsListChangedResult,
 	TSteamUgcFileShareResult,

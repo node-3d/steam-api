@@ -100,6 +100,8 @@ test(
 		assert.equal(typeof steamApi.cloud.getFileNameAndSize, 'function');
 		assert.equal(typeof steamApi.ugc.getItemState, 'function');
 		assert.equal(typeof steamApi.ugc.getItems, 'function');
+		assert.equal(typeof steamApi.ugc.getUserItems, 'function');
+		assert.equal(typeof steamApi.ugc.getItemsByIds, 'function');
 		assert.equal(typeof steamApi.ugc.createItem, 'function');
 		assert.equal(typeof steamApi.ugc.startItemUpdate, 'function');
 		assert.equal(typeof steamApi.ugc.setItemTitle, 'function');
@@ -107,6 +109,9 @@ test(
 		assert.equal(typeof steamApi.ugc.setItemMetadata, 'function');
 		assert.equal(typeof steamApi.ugc.setItemVisibility, 'function');
 		assert.equal(typeof steamApi.ugc.setItemTags, 'function');
+		assert.equal(typeof steamApi.ugc.removeAllItemKeyValueTags, 'function');
+		assert.equal(typeof steamApi.ugc.removeItemKeyValueTags, 'function');
+		assert.equal(typeof steamApi.ugc.addItemKeyValueTag, 'function');
 		assert.equal(typeof steamApi.ugc.setItemContent, 'function');
 		assert.equal(typeof steamApi.ugc.setItemPreview, 'function');
 		assert.equal(typeof steamApi.ugc.submitItemUpdate, 'function');
@@ -115,6 +120,8 @@ test(
 		assert.equal(typeof steamApi.ugc.getUserItemVote, 'function');
 		assert.equal(typeof steamApi.ugc.addItemToFavorites, 'function');
 		assert.equal(typeof steamApi.ugc.removeItemFromFavorites, 'function');
+		assert.equal(typeof steamApi.ugc.addDependency, 'function');
+		assert.equal(typeof steamApi.ugc.removeDependency, 'function');
 		assert.equal(typeof steamApi.ugc.subscribeItem, 'function');
 		assert.equal(typeof steamApi.ugc.unsubscribeItem, 'function');
 		assert.equal(typeof steamApi.ugc.getNumSubscribedItems, 'function');
@@ -172,6 +179,8 @@ const ugcQueryOptionsTypeCheck = {
 	returnOnlyIds: true,
 	returnPlaytimeStatsDays: 30,
 	searchText: 'spacewar',
+	userId: '76561198000000000' as TSteamId,
+	cursor: 'next-page-cursor',
 } satisfies TSteamUgcQueryOptions;
 
 const ugcDetailsTypeCheck = {
