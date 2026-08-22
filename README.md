@@ -20,6 +20,8 @@ npm install @node-3d/steam-api
 * Keeps API names close to Valve's Steamworks interfaces instead of exporting a
   Greenworks-style flat module.
 * Provides Greenworks migration notes in [docs/GREENWORKS.md](docs/GREENWORKS.md).
+* Documents Node.js-specific call patterns by namespace in
+  [docs/api/README.md](docs/api/README.md).
 * Includes repository examples for read-only probes, read-write workflows, and
   a Spacewar AppID 480 Node3D/Core demo.
 
@@ -53,8 +55,17 @@ for (const event of update()) {
 
 ## API
 
+Start with the [Node3D Steam API usage guide](docs/api/README.md). It explains
+the JavaScript contract for every namespace: callback pumping and promise
+completion, decimal-string IDs, `null`/`boolean` return conventions, and the
+binding-specific workflows around Steam's native interfaces. Use the linked
+Steamworks pages there for Steam's feature semantics and policy details.
+
 Migrating from Greenworks? See [docs/GREENWORKS.md](docs/GREENWORKS.md) for
 capability mappings and migration notes.
+
+For Workshop item lookups, deep pagination, key-value tags, and item
+dependencies, see [docs/api/ugc.md](docs/api/ugc.md).
 
 Development coverage is tracked in [docs/CHECKLIST.md](docs/CHECKLIST.md).
 
