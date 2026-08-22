@@ -1907,6 +1907,10 @@ JS_METHOD(getUserItems) {
 JS_METHOD(getItemsByIds) {
 	NAPI_ENV;
 	REQ_ARRAY_ARG(1, publishedFileIds);
+	if (publishedFileIds.Length() > kNumUGCResultsPerPage) {
+		JS_THROW("publishedFileIds must contain no more than 50 item IDs.");
+		RET_UNDEFINED;
+	}
 
 	QueryOptions options = {};
 	if (!readQueryOptions(env, info[0], &options)) {

@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getBin } from '@node-3d/addon-tools';
-import type { TSteamId, TSteamUgcDetails, TSteamUgcQueryOptions } from './index.ts';
+import type {
+	TSteamId,
+	TSteamPublishedFileId,
+	TSteamUgcDetails,
+	TSteamUgcQueryOptions,
+} from './index.ts';
 
 const nativeBinaryPath = join(import.meta.dirname, '..', getBin(), 'steam-api.node');
 const nativeSkip = existsSync(nativeBinaryPath) ? false : 'native binary is not built';
@@ -275,6 +280,14 @@ test(
 		assert.throws(
 			() => steamApi.friends.getFriendMessage(steamId, 0, 64 * 1024 + 1),
 			/maximumMessageSize exceeds the maximum Steam friend message size/u,
+		);
+		assert.throws(
+			() =>
+				steamApi.ugc.getItemsByIds(
+					{},
+					Array.from({ length: 51 }, () => '1' as TSteamPublishedFileId),
+				),
+			/publishedFileIds must contain no more than 50 item IDs/u,
 		);
 	},
 );

@@ -111,7 +111,10 @@ export type TSteamUgcQueryKeyValueTag = Readonly<{
 export type TSteamUgcQueryOptions = Readonly<{
 	appId?: number;
 	page?: number;
-	/** Deep-pagination cursor for getItems(); cannot be combined with page. */
+	/**
+	 * Deep-pagination cursor for getItems(); cannot be combined with page. Must
+	 * be a non-empty nextCursor from a previous result.
+	 */
 	cursor?: string;
 	/** Steam user ID for getUserItems(); defaults to the current user. */
 	userId?: TSteamId;
@@ -193,6 +196,7 @@ export type TSteamUgcQueryResult = Readonly<{
 	result: number;
 	totalMatchingResults: number;
 	cachedData: boolean;
+	/** Empty when there is no next page; do not pass an empty cursor to getItems(). */
 	nextCursor: string;
 	items: TSteamUgcDetails[];
 }>;
@@ -1022,6 +1026,7 @@ export type TSteamNativeUgcNamespace = Readonly<{
 	) => Promise<TSteamUgcQueryResult>;
 	getItemsByIds: (
 		options: TSteamUgcQueryOptions | null | undefined,
+		/** Accepts from one to 50 published file IDs. */
 		publishedFileIds: TSteamPublishedFileId[],
 	) => Promise<TSteamUgcQueryResult>;
 	createItem: (appId?: number, fileType?: number) => Promise<TSteamUgcCreateItemResult>;

@@ -314,14 +314,17 @@ UGC promises resolve from Steam call results. Continue pumping callbacks with
 reports completion through the `download-item-result` callback event:
 
 `getItems()`, `getUserItems()`, and `getItemsByIds()` query options map to Steam's query setter
-methods. Tag filters, required key-value tags, return toggles, playtime stats,
-text search, trend windows, language, and cache age are applied before
-`SendQueryUGCRequest()`. `userId` is used only by `getUserItems()`.
+methods. `getItemsByIds()` accepts from one to 50 known published file IDs and
+throws if given more. Tag filters, required key-value tags, return toggles,
+playtime stats, text search, trend windows, language, and cache age are applied
+before `SendQueryUGCRequest()`. `userId` is used only by `getUserItems()`.
 `matchAnyTag`, `searchText`, and `rankedByTrendDays` are only valid for
 `getItems()`; `cloudFileNameFilter` is only valid for `getUserItems()`.
 `getItems()` also accepts a deep-pagination `cursor`, which cannot be combined
 with `page`. Pass the prior result's non-empty `nextCursor` to obtain the next
-page; cursor pagination is not available for user or ID-detail queries.
+page. Steam returns `nextCursor: ''` on the final page; do not pass that empty
+terminal value as `cursor`, because the binding throws. Cursor pagination is not
+available for user or ID-detail queries.
 
 ```ts
 import {

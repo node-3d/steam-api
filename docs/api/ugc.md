@@ -22,8 +22,9 @@ flags, language, cache age, and the query-specific options documented below.
   deep-pagination `cursor`. Do not combine `cursor` with `page`.
 - `getUserItems()` supports `userId` for another public user and
   `cloudFileNameFilter`; without `userId`, it selects the current user.
-- `getItemsByIds()` accepts known published file IDs and return-field options;
-  it does not support user or cursor options.
+- `getItemsByIds()` accepts one to 50 known published file IDs and return-field
+  options; it does not support user or cursor options. Passing more than 50 IDs
+  throws before Steam creates a query.
 
 The result includes `items`, `totalMatchingResults`, `cachedData`, and
 `nextCursor`. Optional fields such as metadata, children, previews, key-value
@@ -51,7 +52,9 @@ const items = await waitForSteamCall(
 ```
 
 For deep pagination, pass a non-empty `nextCursor` from one all-item result to
-the next `getItems()` call.
+the next `getItems()` call. Steam returns `nextCursor: ''` on the final page;
+that empty terminal value must not be passed as `cursor` because the binding
+throws for an empty cursor. Use a truthiness check such as the one below.
 
 ```ts
 let result = await waitForSteamCall(
