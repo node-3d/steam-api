@@ -117,7 +117,6 @@ jobs:
       - name: Build Current Binary
         run: npm run build:rebuild
         env:
-          npm_config_arch: ${{ matrix.node_arch }}
           ARCHFLAGS: ${{ matrix.archflags }}
           STEAM_SDK_GZ_LINK: ${{ secrets.STEAM_SDK_GZ_LINK }}
           STEAM_SDK_GZ_SHA: ${{ secrets.STEAM_SDK_GZ_SHA }}
