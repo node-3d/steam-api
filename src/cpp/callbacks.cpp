@@ -134,6 +134,9 @@ class CallbackBridge {
 		    this, &CallbackBridge::onFloatingGamepadTextInputDismissed
 		);
 		_downloadItemResult.Register(this, &CallbackBridge::onDownloadItemResult);
+		_connectionStatusChanged.Register(this, &CallbackBridge::onConnectionStatusChanged);
+		_messagesSessionRequest.Register(this, &CallbackBridge::onMessagesSessionRequest);
+		_messagesSessionFailed.Register(this, &CallbackBridge::onMessagesSessionFailed);
 		_isRegistered = true;
 	}
 
@@ -171,6 +174,9 @@ class CallbackBridge {
 		_newUrlLaunchParameters.Unregister();
 		_floatingGamepadTextInputDismissed.Unregister();
 		_downloadItemResult.Unregister();
+		_connectionStatusChanged.Unregister();
+		_messagesSessionRequest.Unregister();
+		_messagesSessionFailed.Unregister();
 		_isRegistered = false;
 		_events.clear();
 	}
@@ -417,6 +423,36 @@ class CallbackBridge {
 		_events.push_back(event);
 	}
 
+	void onConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *param) {
+		Event event = makeEventData("networking-connection-status-changed");
+		event.fields.push_back(makeInt32Field("connection", param->m_hConn));
+		event.fields.push_back(makeInt32Field("oldState", param->m_eOldState));
+		event.fields.push_back(makeInt32Field("state", param->m_info.m_eState));
+		event.fields.push_back(
+		    makeUint64StringField("steamIdRemote", param->m_info.m_identityRemote.GetSteamID64())
+		);
+		event.fields.push_back(makeInt32Field("endReason", param->m_info.m_eEndReason));
+		_events.push_back(event);
+	}
+
+	void onMessagesSessionRequest(SteamNetworkingMessagesSessionRequest_t *param) {
+		Event event = makeEventData("networking-messages-session-request");
+		event.fields.push_back(
+		    makeUint64StringField("steamIdRemote", param->m_identityRemote.GetSteamID64())
+		);
+		_events.push_back(event);
+	}
+
+	void onMessagesSessionFailed(SteamNetworkingMessagesSessionFailed_t *param) {
+		Event event = makeEventData("networking-messages-session-failed");
+		event.fields.push_back(
+		    makeUint64StringField("steamIdRemote", param->m_info.m_identityRemote.GetSteamID64())
+		);
+		event.fields.push_back(makeInt32Field("state", param->m_info.m_eState));
+		event.fields.push_back(makeInt32Field("endReason", param->m_info.m_eEndReason));
+		_events.push_back(event);
+	}
+
 	bool _isRegistered = false;
 	std::vector<Event> _events;
 	CCallbackManual<CallbackBridge, UserStatsReceived_t> _userStatsReceived;
@@ -448,6 +484,9 @@ class CallbackBridge {
 	CCallbackManual<CallbackBridge, NewUrlLaunchParameters_t> _newUrlLaunchParameters;
 	CCallbackManual<CallbackBridge, FloatingGamepadTextInputDismissed_t> _floatingGamepadTextInputDismissed;
 	CCallbackManual<CallbackBridge, DownloadItemResult_t> _downloadItemResult;
+	CCallbackManual<CallbackBridge, SteamNetConnectionStatusChangedCallback_t> _connectionStatusChanged;
+	CCallbackManual<CallbackBridge, SteamNetworkingMessagesSessionRequest_t> _messagesSessionRequest;
+	CCallbackManual<CallbackBridge, SteamNetworkingMessagesSessionFailed_t> _messagesSessionFailed;
 };
 
 std::unique_ptr<CallbackBridge> callbackBridge;

@@ -91,6 +91,15 @@ test(
 		assert.equal(typeof steamApi.networking.closeP2PSessionWithUser, 'function');
 		assert.equal(typeof steamApi.networking.closeP2PChannelWithUser, 'function');
 		assert.equal(typeof steamApi.networking.isBehindNat, 'function');
+		assert.equal(typeof steamApi.networking.sockets.createListenSocketP2P, 'function');
+		assert.equal(typeof steamApi.networking.sockets.connectP2P, 'function');
+		assert.equal(typeof steamApi.networking.sockets.acceptConnection, 'function');
+		assert.equal(typeof steamApi.networking.sockets.sendMessageToConnection, 'function');
+		assert.equal(typeof steamApi.networking.sockets.receiveMessagesOnConnection, 'function');
+		assert.equal(typeof steamApi.networking.sockets.createPollGroup, 'function');
+		assert.equal(typeof steamApi.networking.messages.sendMessageToUser, 'function');
+		assert.equal(typeof steamApi.networking.messages.receiveMessagesOnChannel, 'function');
+		assert.equal(typeof steamApi.networking.messages.acceptSessionWithUser, 'function');
 		assert.equal(typeof steamApi.utils.showFloatingGamepadTextInput, 'function');
 		assert.equal(typeof steamApi.utils.dismissFloatingGamepadTextInput, 'function');
 		assert.equal(typeof steamApi.cloud.saveTextToFile, 'function');
@@ -276,6 +285,18 @@ test(
 		assert.throws(
 			() => steamApi.networking.readP2PPacket(1024 * 1024 + 1),
 			/size exceeds the maximum Steam P2P packet read size/u,
+		);
+		assert.throws(
+			() => steamApi.networking.sockets.receiveMessagesOnConnection(0, 257),
+			/maximumMessages must be between 1 and 256/u,
+		);
+		assert.throws(
+			() =>
+				steamApi.networking.messages.sendMessageToUser(
+					steamId,
+					Buffer.alloc(512 * 1024 + 1),
+				),
+			/data exceeds the maximum Steam networking message size/u,
 		);
 		assert.throws(
 			() => steamApi.friends.getFriendMessage(steamId, 0, 64 * 1024 + 1),

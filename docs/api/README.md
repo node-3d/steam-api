@@ -24,6 +24,7 @@ promise completion, callback delivery, and convenience helpers.
 | `friends` | [Friends and presence](friends.md) | [ISteamFriends](https://partner.steamgames.com/doc/api/ISteamFriends) |
 | `matchmaking` | [Lobbies](matchmaking.md) | [ISteamMatchmaking](https://partner.steamgames.com/doc/api/ISteamMatchmaking) |
 | `networking` | [Legacy P2P networking](networking.md) | [ISteamNetworking](https://partner.steamgames.com/doc/api/ISteamNetworking) |
+| `networking.sockets`, `networking.messages` | [Modern P2P networking](networking-modern.md) | [ISteamNetworkingSockets](https://partner.steamgames.com/doc/api/ISteamNetworkingSockets), [ISteamNetworkingMessages](https://partner.steamgames.com/doc/api/ISteamNetworkingMessages) |
 | `cloud` | [Cloud files](cloud.md) | [ISteamRemoteStorage](https://partner.steamgames.com/doc/api/ISteamRemoteStorage) |
 | `ugc` | [Workshop and UGC](ugc.md) | [ISteamUGC](https://partner.steamgames.com/doc/api/ISteamUGC) |
 | `userStats` | [Stats and achievements](user-stats.md) | [ISteamUserStats](https://partner.steamgames.com/doc/api/ISteamUserStats) |

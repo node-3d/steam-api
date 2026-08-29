@@ -39,7 +39,10 @@ Napi::Object initModule(Napi::Env env, Napi::Object exports) {
 	exports.Set("apps", steam_api::apps::createNamespace(env));
 	exports.Set("friends", steam_api::friends::createNamespace(env));
 	exports.Set("matchmaking", steam_api::matchmaking::createNamespace(env));
-	exports.Set("networking", steam_api::networking::createNamespace(env));
+	Napi::Object networking = steam_api::networking::createNamespace(env);
+	networking.Set("sockets", steam_api::networking::createSocketsNamespace(env));
+	networking.Set("messages", steam_api::networking::createMessagesNamespace(env));
+	exports.Set("networking", networking);
 	exports.Set("cloud", steam_api::cloud::createNamespace(env));
 	exports.Set("ugc", steam_api::ugc::createNamespace(env));
 	exports.Set("userStats", steam_api::user_stats::createNamespace(env));

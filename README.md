@@ -239,6 +239,10 @@ call results, so keep pumping callbacks with `steam.runCallbacks()` or
 `{ data, steamIdRemote, messageSize }`. The requested read size is capped to
 avoid unbounded native allocation.
 
+`networking.sockets` and `networking.messages` expose Steam's modern P2P APIs;
+see [Modern P2P networking](docs/api/networking-modern.md). They are separate
+from the legacy `networking` namespace so existing applications remain stable.
+
 `cloud`:
 
 - `cloud.saveTextToFile(fileName, content)`

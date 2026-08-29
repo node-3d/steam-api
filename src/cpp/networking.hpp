@@ -13,4 +13,6 @@ JS_METHOD(closeP2PChannelWithUser);
 JS_METHOD(isBehindNat);
 
 Napi::Object createNamespace(Napi::Env env);
+Napi::Object createSocketsNamespace(Napi::Env env);
+Napi::Object createMessagesNamespace(Napi::Env env);
 } // namespace steam_api::networking

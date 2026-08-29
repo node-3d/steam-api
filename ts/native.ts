@@ -828,6 +828,24 @@ export type TSteamCallbackEvent =
 			sessionError: number;
 	  }>
 	| Readonly<{
+			type: 'networking-connection-status-changed';
+			connection: number;
+			oldState: number;
+			state: number;
+			steamIdRemote: TSteamId;
+			endReason: number;
+	  }>
+	| Readonly<{
+			type: 'networking-messages-session-request';
+			steamIdRemote: TSteamId;
+	  }>
+	| Readonly<{
+			type: 'networking-messages-session-failed';
+			steamIdRemote: TSteamId;
+			state: number;
+			endReason: number;
+	  }>
+	| Readonly<{
 			type: 'steam-servers-connected';
 	  }>
 	| Readonly<{
@@ -1009,6 +1027,72 @@ export type TSteamNetworkingNamespace = Readonly<{
 	closeP2PSessionWithUser: (steamId: TSteamId) => boolean;
 	closeP2PChannelWithUser: (steamId: TSteamId, channel: number) => boolean;
 	isBehindNat: () => boolean;
+	sockets: TSteamNetworkingSocketsNamespace;
+	messages: TSteamNetworkingMessagesNamespace;
+}>;
+
+export type TSteamNetworkingMessage = Readonly<{
+	data: Buffer;
+	connection: number;
+	steamIdRemote: TSteamId;
+	channel: number;
+	messageNumber: string;
+	receivedAt: string;
+}>;
+
+export type TSteamNetworkingSendResult = Readonly<{
+	result: number;
+	messageNumber: string;
+}>;
+
+/** Modern, connection-oriented ISteamNetworkingSockets P2P API. */
+export type TSteamNetworkingSocketsNamespace = Readonly<{
+	createListenSocketP2P: (localVirtualPort?: number) => number;
+	connectP2P: (steamId: TSteamId, remoteVirtualPort?: number) => number;
+	acceptConnection: (connection: number) => number;
+	closeConnection: (
+		connection: number,
+		reason?: number,
+		debug?: string,
+		linger?: boolean,
+	) => boolean;
+	closeListenSocket: (listenSocket: number) => boolean;
+	setConnectionName: (connection: number, name: string) => void;
+	getConnectionName: (connection: number) => string | null;
+	sendMessageToConnection: (
+		connection: number,
+		data: Buffer,
+		sendFlags?: number,
+	) => TSteamNetworkingSendResult;
+	flushMessagesOnConnection: (connection: number) => number;
+	receiveMessagesOnConnection: (
+		connection: number,
+		maximumMessages?: number,
+	) => TSteamNetworkingMessage[];
+	createPollGroup: () => number;
+	destroyPollGroup: (pollGroup: number) => boolean;
+	setConnectionPollGroup: (connection: number, pollGroup: number) => boolean;
+	receiveMessagesOnPollGroup: (
+		pollGroup: number,
+		maximumMessages?: number,
+	) => TSteamNetworkingMessage[];
+}>;
+
+/** Modern, connectionless ISteamNetworkingMessages P2P API. */
+export type TSteamNetworkingMessagesNamespace = Readonly<{
+	sendMessageToUser: (
+		steamId: TSteamId,
+		data: Buffer,
+		sendFlags?: number,
+		channel?: number,
+	) => number;
+	receiveMessagesOnChannel: (
+		channel?: number,
+		maximumMessages?: number,
+	) => TSteamNetworkingMessage[];
+	acceptSessionWithUser: (steamId: TSteamId) => boolean;
+	closeSessionWithUser: (steamId: TSteamId) => boolean;
+	closeChannelWithUser: (steamId: TSteamId, channel: number) => boolean;
 }>;
 
 export type TSteamNativeUgcNamespace = Readonly<{
