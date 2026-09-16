@@ -253,7 +253,7 @@ const stageAndShareFiles = async (
 	const cloudFiles = nativeUgc.saveFilesToCloud([filePath, previewFilePath]);
 	onProgress?.({ stage: 'files-saved-to-cloud', files: cloudFiles.files });
 
-	await Promise.all(cloudFiles.files.map((file) => nativeUgc.fileShare(file)));
+	await Promise.all(cloudFiles.files.map(async (file) => nativeUgc.fileShare(file)));
 	onProgress?.({ stage: 'files-shared', files: cloudFiles.files });
 
 	return cloudFiles;

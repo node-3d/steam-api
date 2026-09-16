@@ -10,10 +10,10 @@ const copySteamRuntime = async (): Promise<void> => {
 	await fs.mkdir(binDir, { recursive: true });
 
 	await Promise.all(
-		files.map((file) => fs.copyFile(path.join(dir, file), path.join(binDir, file))),
+		files.map(async (file) => fs.copyFile(path.join(dir, file), path.join(binDir, file))),
 	);
 	await Promise.all(
-		(extraFiles ?? []).map(({ dir, file }) =>
+		(extraFiles ?? []).map(async ({ dir, file }) =>
 			fs.copyFile(path.join(dir, file), path.join(binDir, file)),
 		),
 	);

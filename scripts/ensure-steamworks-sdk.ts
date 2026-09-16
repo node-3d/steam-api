@@ -5,11 +5,12 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { SDK_ARCHIVE_PATH, SDK_CACHE_DIR, SDK_DIR, sdkExists } from './paths.ts';
 
+// oxlint-disable-next-line typescript/strict-void-return
 const execFile = promisify(execFileCallback);
 
 // oxlint-disable-next-line node/no-process-env
 const env = process.env;
-const getEnv = (name: string): string => env[name]?.trim() || '';
+const getEnv = (name: string): string => env[name]?.trim() ?? '';
 
 const pathExists = async (filePath: string): Promise<boolean> => {
 	try {
@@ -105,7 +106,7 @@ const downloadArchive = async (url: string): Promise<void> => {
 	}
 
 	const bytes = Buffer.from(await response.arrayBuffer());
-	const contentType = response.headers.get('content-type') || '';
+	const contentType = response.headers.get('content-type') ?? '';
 	const prefix = bytes.subarray(0, 64).toString('utf8').trimStart().toLowerCase();
 
 	if (
@@ -150,7 +151,6 @@ const ensureSdk = async (): Promise<void> => {
 try {
 	await ensureSdk();
 } catch (error) {
-	// oxlint-disable-next-line no-console
 	console.error(error);
 	process.exitCode = 1;
 }

@@ -12,7 +12,7 @@ import type {
 
 const nativeBinaryPath = join(import.meta.dirname, '..', getBin(), 'steam-api.node');
 const nativeSkip = existsSync(nativeBinaryPath) ? false : 'native binary is not built';
-const loadSteamApi = () => import('./index.ts');
+const loadSteamApi = async () => import('./index.ts');
 
 test(
 	'native addon contract is loadable when a prebuilt binary is present',
@@ -217,17 +217,23 @@ test('Steam lifecycle methods are safe without a Steam session', { skip: nativeS
 
 	assert.equal(typeof steamApi.steam.isSteamRunning(), 'boolean');
 	assert.deepEqual(steamApi.callbacks.pollCallbacks(), []);
-	assert.doesNotThrow(() => steamApi.steam.releaseCurrentThreadMemory());
+	assert.doesNotThrow(() => {
+		steamApi.steam.releaseCurrentThreadMemory();
+	});
 
 	const result = steamApi.steam.initEx();
 	try {
 		assert.equal(typeof result.result, 'number');
 		assert.equal(typeof result.ok, 'boolean');
 		assert.equal(typeof result.errorMessage, 'string');
-		assert.doesNotThrow(() => steamApi.steam.runCallbacks());
+		assert.doesNotThrow(() => {
+			steamApi.steam.runCallbacks();
+		});
 		assert.ok(Array.isArray(steamApi.callbacks.pollCallbacks()));
 	} finally {
-		assert.doesNotThrow(() => steamApi.steam.shutdown());
+		assert.doesNotThrow(() => {
+			steamApi.steam.shutdown();
+		});
 	}
 });
 
@@ -238,7 +244,7 @@ test('SteamID helpers operate without a Steam session', { skip: nativeSkip }, as
 
 	assert.equal(steamApi.steamId.isValid(individualSteamId), true);
 	assert.equal(steamApi.steamId.getRawSteamId(individualSteamId), individualSteamId);
-	assert.equal(steamApi.steamId.getAccountId(individualSteamId), 22202);
+	assert.equal(steamApi.steamId.getAccountId(individualSteamId), 22_202);
 	assert.equal(
 		steamApi.steamId.getAccountType(individualSteamId),
 		steamApi.AccountType.Individual,
@@ -302,8 +308,8 @@ test(
 			() => steamApi.friends.getFriendMessage(steamId, 0, 64 * 1024 + 1),
 			/maximumMessageSize exceeds the maximum Steam friend message size/u,
 		);
-		assert.throws(
-			() =>
+		await assert.rejects(
+			async () =>
 				steamApi.ugc.getItemsByIds(
 					{},
 					Array.from({ length: 51 }, () => '1' as TSteamPublishedFileId),

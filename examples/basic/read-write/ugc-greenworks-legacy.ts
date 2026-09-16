@@ -18,7 +18,7 @@ if (files.length > 0) {
 
 	if (hasFlag('share')) {
 		const shares = await Promise.all(
-			saved.files.map((file) => waitForSteamCall(ugc.fileShare(file))),
+			saved.files.map(async (file) => waitForSteamCall(ugc.fileShare(file))),
 		);
 		console.log('Shared files:', shares);
 	}

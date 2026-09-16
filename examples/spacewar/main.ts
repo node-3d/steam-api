@@ -239,7 +239,10 @@ function createAsteroid(radius: number): TAsteroid {
 			new three.Vector2(Math.cos(angle) * radius * jitter, Math.sin(angle) * radius * jitter),
 		);
 	}
-	points.push(points[0].clone());
+	const point0 = points[0];
+	if (point0) {
+		points.push(point0.clone());
+	}
 
 	const mesh = new three.Line(
 		new three.BufferGeometry().setFromPoints(points),
@@ -361,7 +364,7 @@ function updateShip(dt: number): void {
 	const shieldActive = wantsShield && shield > 0;
 	shieldMesh.visible = shieldActive || invincibleFor > 0;
 	shieldMesh.position.copy(ship.mesh.position);
-	const shieldMaterial = shieldMesh.material as three.MeshBasicMaterial;
+	const shieldMaterial = shieldMesh.material;
 	shieldMaterial.opacity = shieldActive
 		? 0.35
 		: 0.14 + Math.sin(performance.now() * 0.018) * 0.08;
@@ -370,6 +373,9 @@ function updateShip(dt: number): void {
 function updateShots(dt: number): void {
 	for (let index = shots.length - 1; index >= 0; index--) {
 		const shot = shots[index];
+		if (!shot) {
+			continue;
+		}
 		shot.age += dt;
 		shot.position.addScaledVector(shot.velocity, dt);
 		wrap(shot);
@@ -393,8 +399,14 @@ function updateAsteroids(dt: number): void {
 function resolveCollisions(): void {
 	for (let asteroidIndex = asteroids.length - 1; asteroidIndex >= 0; asteroidIndex--) {
 		const asteroid = asteroids[asteroidIndex];
+		if (!asteroid) {
+			continue;
+		}
 		for (let shotIndex = shots.length - 1; shotIndex >= 0; shotIndex--) {
 			const shot = shots[shotIndex];
+			if (!shot) {
+				continue;
+			}
 			if (shot.position.distanceTo(asteroid.position) > shot.radius + asteroid.radius) {
 				continue;
 			}
@@ -487,7 +499,7 @@ function updateHud(): void {
 	heatBar.fill.scale.x = heat;
 	shieldBar.fill.scale.x = shield;
 	lifeBar.fill.scale.x = lives / 3;
-	const heatMaterial = heatBar.fill.material as three.MeshBasicMaterial;
+	const heatMaterial = heatBar.fill.material;
 	heatMaterial.color.setHex(heat > 0.85 ? 0xff2d2d : 0xff6b4a);
 }
 
@@ -569,12 +581,16 @@ function clearAsteroids(): void {
 
 function removeShot(index: number): void {
 	const [shot] = shots.splice(index, 1);
-	shotGroup.remove(shot.mesh);
+	if (shot) {
+		shotGroup.remove(shot.mesh);
+	}
 }
 
 function removeAsteroid(index: number): void {
 	const [asteroid] = asteroids.splice(index, 1);
-	asteroidGroup.remove(asteroid.mesh);
+	if (asteroid) {
+		asteroidGroup.remove(asteroid.mesh);
+	}
 }
 
 function wrap(body: TBody): void {
