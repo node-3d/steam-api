@@ -21,15 +21,14 @@
 		"dist",
 		"install.js",
 		"LICENSE",
-		"package.json",
-		"README.md",
-		"tsconfig.json"
+		"README.md"
 	],
 	"engines": {
 		"node": ">=22.18.0",
 		"npm": ">=10.9.0"
 	},
 	"scripts": {
+		"i": "npm install --workspaces=false",
 		"postinstall": "node install.js",
 		"sdk:ensure": "node scripts/ensure-steamworks-sdk.ts",
 		"build:rebuild": "node scripts/ensure-steamworks-sdk.ts && cd src && node-gyp rebuild -j max --silent && node -e \"import('@node-3d/addon-tools').then((m) => m.cpbin('steam-api'))\" && cd .. && node scripts/copy-steam-runtime.ts",
