@@ -74,7 +74,7 @@ const { loop } = init({
 	title: 'Node3D Spacewar',
 });
 
-const screen = new Screen({ three, far: 2000 });
+const screen = new Screen({ far: 2000 });
 screen.camera.position.z = 620;
 screen.renderer.setClearColor(0x050713, 1);
 
