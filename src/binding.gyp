@@ -30,17 +30,25 @@
 			],
 			'conditions': [
 				['OS=="linux" and target_arch=="arm64"', {
+					'library_dirs': [
+						'<(steam_redist)/linuxarm64',
+						'<(steam_include)/steam/lib/linuxarm64',
+					],
 					'libraries': [
 						"-Wl,-rpath,'$$ORIGIN'",
-						'<(steam_redist)/linuxarm64/libsteam_api.so',
-						'<(steam_include)/steam/lib/linuxarm64/libsdkencryptedappticket.so',
+						'-lsteam_api',
+						'-lsdkencryptedappticket',
 					],
 				}],
 				['OS=="linux" and target_arch!="arm64"', {
+					'library_dirs': [
+						'<(steam_redist)/linux64',
+						'<(steam_include)/steam/lib/linux64',
+					],
 					'libraries': [
 						"-Wl,-rpath,'$$ORIGIN'",
-						'<(steam_redist)/linux64/libsteam_api.so',
-						'<(steam_include)/steam/lib/linux64/libsdkencryptedappticket.so',
+						'-lsteam_api',
+						'-lsdkencryptedappticket',
 					],
 				}],
 				['OS=="mac"', {

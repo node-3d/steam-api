@@ -12,17 +12,12 @@ on:
         type: string
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 jobs:
-  create_release:
-    name: Create Release
-    runs-on: ubuntu-latest
-
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+  package:
+    name: Pack npm Candidate
+    runs-on: ubuntu-22.04
 
     steps:
 
@@ -37,27 +32,27 @@ jobs:
           node-version: 24.13.0
           cache: 'npm'
 
-      - name: Get Package Version
-        id: package-version
-        run: |
-          release_tag="${{ inputs.release_tag }}"
-          if [ -z "$release_tag" ]; then
-            release_tag="$(node -p "require('./package').version")"
-          fi
-          echo "version=$release_tag" >> "$GITHUB_OUTPUT"
+      - name: Install Modules
+        run: npm ci --ignore-scripts
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v3
+      - name: Validate Binary Tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          node -e "const fs = require('node:fs'); const version = require('./package').version; const source = fs.readFileSync('install.js', 'utf8'); const tag = source.match(/const tag = '([^']+)'/u)?.[1]; const releaseTag = process.env.RELEASE_TAG || version; if (tag !== releaseTag) throw new Error('install.js tag ' + tag + ' does not match release tag ' + releaseTag)"
+
+      - name: Pack npm Candidate
+        run: npm pack
+
+      - name: Store npm Candidate
+        uses: actions/upload-artifact@v7
         with:
-          tag_name: ${{ steps.package-version.outputs.version }}
-          name: Release ${{ steps.package-version.outputs.version }}
+          name: npm-package
+          path: '*.tgz'
+          if-no-files-found: error
 
   build:
     name: Build (${{ matrix.target }})
-    needs: create_release
     strategy:
       fail-fast: false
       matrix:
@@ -121,6 +116,106 @@ jobs:
           STEAM_SDK_GZ_LINK: ${{ secrets.STEAM_SDK_GZ_LINK }}
           STEAM_SDK_GZ_SHA: ${{ secrets.STEAM_SDK_GZ_SHA }}
 
+      - name: Pack Files
+        id: pack-files
+        run: node -e "import('@node-3d/addon-tools').then((m) => m.actionPack())" >> $GITHUB_OUTPUT
+
+      - name: Store Binary Candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: binary-${{ matrix.target }}
+          path: ${{ steps.pack-files.outputs.pack }}
+          if-no-files-found: error
+
+  consumer:
+    name: Consumer Install (${{ matrix.target }})
+    needs: [package, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x64
+            os: windows-2022
+            node_arch: x64
+            binary_artifact: binary-windows-x64
+          - target: windows-x64-on-arm
+            os: windows-11-arm
+            node_arch: x64
+            binary_artifact: binary-windows-x64
+          - target: linux-x64
+            os: ubuntu-22.04
+            node_arch: x64
+            binary_artifact: binary-linux-x64
+          - target: linux-arm64
+            os: ubuntu-22.04-arm
+            node_arch: arm64
+            binary_artifact: binary-linux-arm64
+          - target: darwin-x64
+            os: macos-26-intel
+            node_arch: x64
+            binary_artifact: binary-darwin-x64
+          - target: darwin-arm64
+            os: macos-26
+            node_arch: arm64
+            binary_artifact: binary-darwin-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.13.0
+          architecture: ${{ matrix.node_arch }}
+
+      - name: Download npm Candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: package
+
+      - name: Download Binary Candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.binary_artifact }}
+          path: binary
+
+      - name: Select Binary Candidate
+        run: node -e "const path = require('node:path'); const { pathToFileURL } = require('node:url'); console.log('NODE_3D_STEAM_API_BINARY_BASE_URL=' + pathToFileURL(path.resolve('binary')).href)" >> "$GITHUB_ENV"
+
+      - name: Install as Consumer
+        run: |
+          mkdir consumer
+          cd consumer
+          npm init -y
+          npm install ../package/*.tgz
+
+      - name: Load Public Entry
+        working-directory: consumer
+        run: node -e "import('@node-3d/steam-api')"
+
+  release:
+    name: Publish Native Assets
+    needs: consumer
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+
+      - name: Fetch Repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.13.0
+
       - name: Get Package Version
         id: package-version
         run: |
@@ -130,20 +225,23 @@ jobs:
           fi
           echo "version=$release_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Pack Files
-        id: pack-files
-        run: node -e "import('@node-3d/addon-tools').then((m) => m.actionPack())" >> $GITHUB_OUTPUT
+      - name: Download Binary Candidates
+        uses: actions/download-artifact@v8
+        with:
+          pattern: binary-*
+          path: binaries
+          merge-multiple: true
 
-      - name: Attest Binary
+      - name: Attest Binaries
         uses: actions/attest@v4
         with:
-          subject-path: ${{ steps.pack-files.outputs.pack }}
+          subject-path: binaries/*.gz
 
-      - name: Store Binaries
+      - name: Create Release and Store Binaries
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.package-version.outputs.version }}
           name: Release ${{ steps.package-version.outputs.version }}
-          files: ${{ steps.pack-files.outputs.pack }}
+          files: binaries/*.gz
