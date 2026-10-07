@@ -35,21 +35,8 @@ jobs:
       - name: Install Modules
         run: npm ci --ignore-scripts
 
-      - name: Validate Binary Tag
-        env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
-        run: |
-          node -e "const fs = require('node:fs'); const version = require('./package').version; const source = fs.readFileSync('install.js', 'utf8'); const tag = source.match(/const tag = '([^']+)'/u)?.[1]; const releaseTag = process.env.RELEASE_TAG || version; if (tag !== releaseTag) throw new Error('install.js tag ' + tag + ' does not match release tag ' + releaseTag)"
-
-      - name: Pack npm Candidate
-        run: npm pack
-
       - name: Store npm Candidate
-        uses: actions/upload-artifact@v7
-        with:
-          name: npm-package
-          path: '*.tgz'
-          if-no-files-found: error
+        uses: node-3d/addon-tools/actions/npm-candidate-upload@1073c0a6403f6c20df2135f03950a568e865aa16
 
   build:
     name: Build (${{ matrix.target }})
@@ -137,16 +124,10 @@ jobs:
           done < <(find bin-* -type f \( -name '*.node' -o -name '*.dylib' \) -print0)
           test "$checked" -gt 0
           echo "Verified $checked Mach-O files target macOS 13.5"
-      - name: Pack Files
-        id: pack-files
-        run: node -e "import('@node-3d/addon-tools').then((m) => m.actionPack())" >> $GITHUB_OUTPUT
-
-      - name: Store Binary Candidate
-        uses: actions/upload-artifact@v7
+      - name: Store Native Candidate
+        uses: node-3d/addon-tools/actions/native-candidate-upload@1073c0a6403f6c20df2135f03950a568e865aa16
         with:
-          name: binary-${{ matrix.target }}
-          path: ${{ steps.pack-files.outputs.pack }}
-          if-no-files-found: error
+          artifact-name: native-${{ matrix.target }}
 
   consumer:
     name: Consumer Install (${{ matrix.target }})
@@ -158,63 +139,48 @@ jobs:
           - target: windows-x64
             os: windows-2022
             node_arch: x64
-            binary_artifact: binary-windows-x64
+            binary_artifact: native-windows-x64
           - target: windows-x64-on-arm
             os: windows-11-arm
             node_arch: x64
-            binary_artifact: binary-windows-x64
+            binary_artifact: native-windows-x64
           - target: linux-x64
             os: ubuntu-22.04
             node_arch: x64
-            binary_artifact: binary-linux-x64
+            binary_artifact: native-linux-x64
           - target: linux-arm64
             os: ubuntu-22.04-arm
             node_arch: arm64
-            binary_artifact: binary-linux-arm64
+            binary_artifact: native-linux-arm64
           - target: darwin-x64
             os: macos-26-intel
             node_arch: x64
-            binary_artifact: binary-darwin-x64
+            binary_artifact: native-darwin-x64
           - target: darwin-arm64
             os: macos-26
             node_arch: arm64
-            binary_artifact: binary-darwin-arm64
+            binary_artifact: native-darwin-arm64
 
     runs-on: ${{ matrix.os }}
 
     steps:
-
-      - name: Install Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
         with:
           node-version: 24.13.0
           architecture: ${{ matrix.node_arch }}
-
-      - name: Download npm Candidate
-        uses: actions/download-artifact@v8
+      - name: Install Packed Consumer Candidate
+        id: consumer
+        uses: node-3d/addon-tools/actions/consumer-install@1073c0a6403f6c20df2135f03950a568e865aa16
         with:
-          name: npm-package
-          path: package
-
-      - name: Download Binary Candidate
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ matrix.binary_artifact }}
-          path: binary
-
-      - name: Select Binary Candidate
-        run: node -e "const path = require('node:path'); const { pathToFileURL } = require('node:url'); console.log('NODE_3D_STEAM_API_BINARY_BASE_URL=' + pathToFileURL(path.resolve('binary')).href)" >> "$GITHUB_ENV"
-
-      - name: Install as Consumer
-        run: |
-          mkdir consumer
-          cd consumer
-          npm init -y
-          npm install ../package/*.tgz
-
-      - name: Load Public Entry
-        working-directory: consumer
-        run: node -e "import('@node-3d/steam-api')"
+          package-name: '@node-3d/steam-api'
+          binary-artifact: ${{ matrix.binary_artifact }}
+          fixture: test-consumer
+      - name: Run Packed Consumer Tests
+        working-directory: ${{ steps.consumer.outputs.directory }}
+        run: npm test
 
   release:
     name: Publish Native Assets
@@ -249,14 +215,14 @@ jobs:
       - name: Download Binary Candidates
         uses: actions/download-artifact@v8
         with:
-          pattern: binary-*
-          path: binaries
+          pattern: native-*
+          path: release-candidates
           merge-multiple: true
 
       - name: Attest Binaries
         uses: actions/attest@v4
         with:
-          subject-path: binaries/*.gz
+          subject-path: release-candidates/*.gz
 
       - name: Create Release and Store Binaries
         uses: softprops/action-gh-release@v3
@@ -265,4 +231,4 @@ jobs:
         with:
           tag_name: ${{ steps.package-version.outputs.version }}
           name: Release ${{ steps.package-version.outputs.version }}
-          files: binaries/*.gz
+          files: release-candidates/*.gz
